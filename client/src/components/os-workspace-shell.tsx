@@ -2,19 +2,20 @@ import { useState, useEffect } from "react";
 import type { GameState } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Home, Settings, Bell, Key, Shield, Menu, Activity
+  Home, Settings, Bell, Key, Shield, Menu, Activity, BookOpen
 } from "lucide-react";
 import { DashboardApp } from "@/components/dashboard-app";
 import { SettingsApp } from "@/components/settings-app";
 import { NotificationsCenter } from "@/components/notifications-center";
 import { PasswordStudio } from "@/components/password-studio";
 import { ActivityLog } from "@/components/activity-log";
+import { UserHelpGuide } from "@/components/user-help-guide";
 
 interface OSWorkspaceShellProps {
   gameState: GameState;
 }
 
-type AppView = "home" | "settings" | "notifications" | "passwords" | "activities";
+type AppView = "home" | "settings" | "notifications" | "passwords" | "activities" | "help";
 
 export function OSWorkspaceShell({ gameState }: OSWorkspaceShellProps) {
   const [currentApp, setCurrentApp] = useState<AppView>("settings");
@@ -32,6 +33,7 @@ export function OSWorkspaceShell({ gameState }: OSWorkspaceShellProps) {
     { id: "activities" as AppView, icon: Activity, label: "Atividades", color: "text-green-500", requiresAccount: true },
     { id: "passwords" as AppView, icon: Key, label: "Senhas", color: "text-purple-500", requiresAccount: true },
     { id: "notifications" as AppView, icon: Bell, label: "Notificações", color: "text-amber-500", badge: unreadNotifications, requiresAccount: true },
+    { id: "help" as AppView, icon: BookOpen, label: "Guia de Ajuda", color: "text-indigo-500", requiresAccount: false },
     { id: "settings" as AppView, icon: Settings, label: "Configurações", color: "text-gray-500", requiresAccount: false },
   ];
 
@@ -51,6 +53,8 @@ export function OSWorkspaceShell({ gameState }: OSWorkspaceShellProps) {
         return <NotificationsCenter gameState={gameState} />;
       case "passwords":
         return <PasswordStudio gameState={gameState} />;
+      case "help":
+        return <UserHelpGuide />;
       default:
         return <DashboardApp gameState={gameState} onNavigate={setCurrentApp} />;
     }

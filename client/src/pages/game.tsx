@@ -3,13 +3,14 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { GameState } from "@shared/schema";
 import { CasualUserPanel } from "@/components/casual-user-panel-new";
-import { HackerPanel } from "@/components/hacker-panel-new";
+import { HackerPanelImproved } from "@/components/hacker-panel-improved";
 import { TutorialModal } from "@/components/tutorial-modal";
 import { GameOverModal } from "@/components/game-over-modal";
 
 export default function Game() {
   const [showTutorial, setShowTutorial] = useState(true);
   const [showGameOver, setShowGameOver] = useState(false);
+  const [mobileView, setMobileView] = useState<'user' | 'hacker'>('user');
 
   const { data: gameState, isLoading } = useQuery<GameState>({
     queryKey: ['/api/game-state'],
@@ -68,19 +69,37 @@ export default function Game() {
             <CasualUserPanel gameState={gameState} />
             <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-slate-700 to-transparent"></div>
           </div>
-          <HackerPanel gameState={gameState} />
+          <HackerPanelImproved gameState={gameState} />
         </div>
 
         <div className="lg:hidden flex flex-col w-full">
           <div className="flex border-b border-slate-700">
-            <button className="flex-1 py-3 text-sm font-medium border-b-2 border-user-safe bg-user-safe/5 text-slate-100">
+            <button 
+              onClick={() => setMobileView('user')}
+              className={`flex-1 py-3 text-sm font-medium transition-colors ${
+                mobileView === 'user'
+                  ? 'border-b-2 border-user-safe bg-user-safe/5 text-slate-100'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
               SUA CONTA
             </button>
-            <button className="flex-1 py-3 text-sm font-medium text-slate-400">
+            <button 
+              onClick={() => setMobileView('hacker')}
+              className={`flex-1 py-3 text-sm font-medium transition-colors ${
+                mobileView === 'hacker'
+                  ? 'border-b-2 border-red-600 bg-red-600/5 text-slate-100'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
               VISÃO DO HACKER
             </button>
           </div>
-          <CasualUserPanel gameState={gameState} />
+          {mobileView === 'user' ? (
+            <CasualUserPanel gameState={gameState} />
+          ) : (
+            <HackerPanelImproved gameState={gameState} />
+          )}
         </div>
       </div>
 

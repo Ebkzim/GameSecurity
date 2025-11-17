@@ -436,6 +436,19 @@ var deletePasswordSchema = z.object({
 
 // server/routes.ts
 import { randomUUID } from "crypto";
+function addActivityLog(gameState, actor, action, detail) {
+  const newLog = {
+    id: randomUUID(),
+    timestamp: Date.now(),
+    actor,
+    action,
+    detail
+  };
+  return {
+    ...gameState,
+    activityLog: [...gameState.activityLog || [], newLog]
+  };
+}
 function calculateVulnerability(gameState) {
   const measures = gameState.casualUser.securityMeasures;
   const config = gameState.casualUser.securityConfig || {};
@@ -595,7 +608,7 @@ async function registerRoutes(app2) {
       const { name, email, password } = result.data;
       const passwordStrength = calculatePasswordStrength(password);
       const currentState = getGameState(req.session);
-      const gameState = updateGameState(req.session, {
+      let gameState = updateGameState(req.session, {
         casualUser: {
           ...currentState.casualUser,
           name,
@@ -608,7 +621,9 @@ async function registerRoutes(app2) {
           }
         }
       });
+      gameState = addActivityLog(gameState, "user", "Conta criada", `Nome: ${name}, Email: ${email}, For\xE7a da senha: ${passwordStrength}%`);
       const updatedState = updateGameState(req.session, {
+        ...gameState,
         vulnerabilityScore: calculateVulnerability(gameState)
       });
       res.json(updatedState);
@@ -624,7 +639,7 @@ async function registerRoutes(app2) {
       }
       const { measure, enabled } = result.data;
       const currentState = getGameState(req.session);
-      const gameState = updateGameState(req.session, {
+      let gameState = updateGameState(req.session, {
         casualUser: {
           ...currentState.casualUser,
           securityMeasures: {
@@ -633,7 +648,28 @@ async function registerRoutes(app2) {
           }
         }
       });
+      const measureNames = {
+        twoFactorAuth: "Autentica\xE7\xE3o de Dois Fatores",
+        strongPassword: "Senha Forte",
+        emailVerification: "Verifica\xE7\xE3o de Email",
+        securityQuestions: "Perguntas de Seguran\xE7a",
+        backupEmail: "Email de Recupera\xE7\xE3o",
+        authenticatorApp: "Aplicativo Autenticador",
+        smsBackup: "Backup por SMS",
+        trustedDevices: "Dispositivos Confi\xE1veis",
+        loginAlerts: "Alertas de Login",
+        sessionManagement: "Gerenciamento de Sess\xE3o",
+        ipWhitelist: "Lista de IPs Permitidos",
+        passwordVault: "Cofre de Senhas"
+      };
+      gameState = addActivityLog(
+        gameState,
+        "user",
+        enabled ? "Prote\xE7\xE3o ativada" : "Prote\xE7\xE3o desativada",
+        measureNames[measure] || measure
+      );
       const updatedState = updateGameState(req.session, {
+        ...gameState,
         vulnerabilityScore: calculateVulnerability(gameState)
       });
       res.json(updatedState);
@@ -869,7 +905,7 @@ async function registerRoutes(app2) {
       const newCooldowns = { ...currentState.hacker.cooldowns };
       newCooldowns[attackId] = Date.now() + attack.cooldown;
       const newScenarioCursor = attackId === "social_engineering" ? (currentState.hacker.socialEngineeringScenarioCursor + 1) % 3 : currentState.hacker.socialEngineeringScenarioCursor;
-      const gameState = updateGameState(req.session, {
+      let gameState = updateGameState(req.session, {
         hacker: {
           ...currentState.hacker,
           attacksAttempted: currentState.hacker.attacksAttempted + 1,
@@ -883,7 +919,14 @@ async function registerRoutes(app2) {
           accountCompromised: isSuccessful || currentState.casualUser.accountCompromised
         }
       });
-      res.json(gameState);
+      gameState = addActivityLog(
+        gameState,
+        "hacker",
+        `Ataque executado: ${attack.name}`,
+        `${isSuccessful ? "Sucesso!" : "Falhou."} Chance de sucesso: ${Math.round(successChance)}%`
+      );
+      const finalState = updateGameState(req.session, gameState);
+      res.json(finalState);
     } catch (error) {
       res.status(500).json({ error: "Failed to execute attack" });
     }

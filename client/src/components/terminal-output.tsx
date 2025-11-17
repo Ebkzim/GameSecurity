@@ -38,7 +38,7 @@ export function TerminalOutput({ lines, isRunning, className, showProgress, prog
       const timeout = setTimeout(() => {
         setCurrentLineText(prev => prev + currentLine.text[charIndex]);
         setCharIndex(prev => prev + 1);
-      }, currentLine.type === 'input' ? 30 : 15);
+      }, currentLine.type === 'input' ? 20 : 8);
       
       return () => clearTimeout(timeout);
     } else {
@@ -47,7 +47,7 @@ export function TerminalOutput({ lines, isRunning, className, showProgress, prog
         setCurrentLineText('');
         setCharIndex(0);
         setCurrentLineIndex(prev => prev + 1);
-      }, currentLine.delay || 200);
+      }, currentLine.delay || 100);
       
       return () => clearTimeout(timeout);
     }

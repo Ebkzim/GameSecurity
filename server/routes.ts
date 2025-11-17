@@ -30,6 +30,24 @@ import {
 import { randomUUID } from "crypto";
 
 /**
+ * Adiciona uma entrada ao log de atividades
+ */
+function addActivityLog(gameState: any, actor: 'user' | 'hacker' | 'system', action: string, detail?: string) {
+  const newLog = {
+    id: randomUUID(),
+    timestamp: Date.now(),
+    actor,
+    action,
+    detail,
+  };
+  
+  return {
+    ...gameState,
+    activityLog: [...(gameState.activityLog || []), newLog],
+  };
+}
+
+/**
  * Calcula o nível de vulnerabilidade do usuário (0-100%)
  * 
  * Cada medida de segurança ativa reduz a vulnerabilidade:
@@ -231,7 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const passwordStrength = calculatePasswordStrength(password);
       
       const currentState = getGameState(req.session);
-      const gameState = updateGameState(req.session, {
+      let gameState = updateGameState(req.session, {
         casualUser: {
           ...currentState.casualUser,
           name,
@@ -245,7 +263,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
       
+      gameState = addActivityLog(gameState, 'user', 'Conta criada', `Nome: ${name}, Email: ${email}, Força da senha: ${passwordStrength}%`);
+      
       const updatedState = updateGameState(req.session, {
+        ...gameState,
         vulnerabilityScore: calculateVulnerability(gameState),
       });
       
@@ -265,7 +286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { measure, enabled } = result.data;
       const currentState = getGameState(req.session);
       
-      const gameState = updateGameState(req.session, {
+      let gameState = updateGameState(req.session, {
         casualUser: {
           ...currentState.casualUser,
           securityMeasures: {
@@ -275,7 +296,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
       
+      const measureNames: Record<string, string> = {
+        twoFactorAuth: 'Autenticação de Dois Fatores',
+        strongPassword: 'Senha Forte',
+        emailVerification: 'Verificação de Email',
+        securityQuestions: 'Perguntas de Segurança',
+        backupEmail: 'Email de Recuperação',
+        authenticatorApp: 'Aplicativo Autenticador',
+        smsBackup: 'Backup por SMS',
+        trustedDevices: 'Dispositivos Confiáveis',
+        loginAlerts: 'Alertas de Login',
+        sessionManagement: 'Gerenciamento de Sessão',
+        ipWhitelist: 'Lista de IPs Permitidos',
+        passwordVault: 'Cofre de Senhas',
+      };
+      
+      gameState = addActivityLog(
+        gameState, 
+        'user', 
+        enabled ? 'Proteção ativada' : 'Proteção desativada', 
+        measureNames[measure] || measure
+      );
+      
       const updatedState = updateGameState(req.session, {
+        ...gameState,
         vulnerabilityScore: calculateVulnerability(gameState),
       });
       
@@ -587,7 +631,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? (currentState.hacker.socialEngineeringScenarioCursor + 1) % 3
         : currentState.hacker.socialEngineeringScenarioCursor;
       
-      const gameState = updateGameState(req.session, {
+      let gameState = updateGameState(req.session, {
         hacker: {
           ...currentState.hacker,
           attacksAttempted: currentState.hacker.attacksAttempted + 1,
@@ -604,7 +648,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
       
-      res.json(gameState);
+      // Adicionar log de atividade do ataque
+      gameState = addActivityLog(
+        gameState,
+        'hacker',
+        `Ataque executado: ${attack.name}`,
+        `${isSuccessful ? 'Sucesso!' : 'Falhou.'} Chance de sucesso: ${Math.round(successChance)}%`
+      );
+      
+      const finalState = updateGameState(req.session, gameState);
+      
+      res.json(finalState);
     } catch (error) {
       res.status(500).json({ error: "Failed to execute attack" });
     }
