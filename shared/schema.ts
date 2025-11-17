@@ -129,6 +129,7 @@ export const gameStateSchema = z.object({
       loginAlerts: z.boolean().default(false),
       sessionManagement: z.boolean().default(false),
       ipWhitelist: z.boolean().default(false),
+      passwordVault: z.boolean().default(false),
     }),
     securitySetupFlows: securitySetupFlowSchema.default({}),
     securityConfig: securityConfigSchema.default({}),
@@ -178,7 +179,7 @@ export const attackTypes = [
     id: 'social_engineering',
     name: 'Engenharia Social',
     description: 'Manipular o usuário para revelar informações',
-    cooldown: 15000, // 15 seconds
+    cooldown: 15000,
     icon: 'Users',
   },
   {
@@ -209,6 +210,55 @@ export const attackTypes = [
     cooldown: 35000,
     icon: 'Database',
   },
+  {
+    id: 'session_hijacking',
+    name: 'Sequestro de Sessão',
+    description: 'Roubar token de sessão ativo do usuário',
+    cooldown: 28000,
+    icon: 'Cookie',
+  },
+  {
+    id: 'man_in_the_middle',
+    name: 'Man-in-the-Middle',
+    description: 'Interceptar comunicação entre usuário e servidor',
+    cooldown: 32000,
+    icon: 'Network',
+  },
+  {
+    id: 'credential_stuffing',
+    name: 'Credential Stuffing',
+    description: 'Usar credenciais vazadas de outros sites',
+    cooldown: 26000,
+    icon: 'KeyRound',
+  },
+  {
+    id: 'sim_swap',
+    name: 'SIM Swap',
+    description: 'Clonar SIM card para interceptar SMS',
+    cooldown: 40000,
+    icon: 'Smartphone',
+  },
+  {
+    id: 'malware_injection',
+    name: 'Injeção de Malware',
+    description: 'Infectar dispositivo com software malicioso',
+    cooldown: 33000,
+    icon: 'Bug',
+  },
+  {
+    id: 'dns_spoofing',
+    name: 'DNS Spoofing',
+    description: 'Redirecionar para site falso via DNS',
+    cooldown: 29000,
+    icon: 'Globe',
+  },
+  {
+    id: 'zero_day_exploit',
+    name: 'Zero-Day Exploit',
+    description: 'Explorar vulnerabilidade desconhecida',
+    cooldown: 50000,
+    icon: 'Zap',
+  },
 ] as const;
 
 export type AttackType = typeof attackTypes[number];
@@ -219,7 +269,7 @@ export const executeAttackSchema = z.object({
 });
 
 export const updateSecuritySchema = z.object({
-  measure: z.enum(['twoFactorAuth', 'strongPassword', 'emailVerification', 'securityQuestions', 'backupEmail', 'authenticatorApp', 'smsBackup', 'trustedDevices', 'loginAlerts', 'sessionManagement', 'ipWhitelist']),
+  measure: z.enum(['twoFactorAuth', 'strongPassword', 'emailVerification', 'securityQuestions', 'backupEmail', 'authenticatorApp', 'smsBackup', 'trustedDevices', 'loginAlerts', 'sessionManagement', 'ipWhitelist', 'passwordVault']),
   enabled: z.boolean(),
 });
 

@@ -62,6 +62,7 @@ function calculateVulnerability(gameState: any): number {
   if (measures.loginAlerts && (config.loginAlerts?.emailAlerts || config.loginAlerts?.smsAlerts)) totalReduction += 10;
   if (measures.sessionManagement) totalReduction += 12;
   if (measures.ipWhitelist && config.ipWhitelist?.enabled && config.ipWhitelist?.allowedIPs?.length > 0) totalReduction += 18;
+  if (measures.passwordVault && gameState.casualUser.passwordVault?.length >= 3) totalReduction += 8;
   
   const vulnerability = Math.max(0, Math.min(100, 100 - totalReduction));
   return vulnerability;
@@ -814,11 +815,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: Date.now(),
       };
 
+      const newVault = [...currentState.casualUser.passwordVault, newPassword];
+      const shouldActivateVault = newVault.length >= 3 && !currentState.casualUser.securityMeasures.passwordVault;
+
+      const activityLog = [
+        ...currentState.activityLog,
+        {
+          id: randomUUID(),
+          timestamp: Date.now(),
+          actor: 'user' as const,
+          action: 'Senha salva no cofre',
+          detail: `"${result.data.title}" adicionada ao cofre de senhas`,
+        },
+      ];
+
+      if (shouldActivateVault) {
+        activityLog.push({
+          id: randomUUID(),
+          timestamp: Date.now(),
+          actor: 'system' as const,
+          action: 'Cofre de Senhas ativado',
+          detail: '3 ou mais senhas armazenadas - bônus de segurança aplicado',
+        });
+      }
+
       const gameState = updateGameState(req.session, {
         casualUser: {
           ...currentState.casualUser,
-          passwordVault: [...currentState.casualUser.passwordVault, newPassword],
+          passwordVault: newVault,
+          securityMeasures: {
+            ...currentState.casualUser.securityMeasures,
+            passwordVault: shouldActivateVault || currentState.casualUser.securityMeasures.passwordVault,
+          },
         },
+        activityLog,
       });
 
       res.json(gameState);
@@ -836,12 +866,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { id } = result.data;
       const currentState = getGameState(req.session);
+      const deletedPassword = currentState.casualUser.passwordVault.find(p => p.id === id);
+      const newVault = currentState.casualUser.passwordVault.filter(p => p.id !== id);
+      const shouldDeactivateVault = newVault.length < 3 && currentState.casualUser.securityMeasures.passwordVault;
+
+      const activityLog = [
+        ...currentState.activityLog,
+        {
+          id: randomUUID(),
+          timestamp: Date.now(),
+          actor: 'user' as const,
+          action: 'Senha removida do cofre',
+          detail: deletedPassword ? `"${deletedPassword.title}" removida` : 'Senha removida',
+        },
+      ];
+
+      if (shouldDeactivateVault) {
+        activityLog.push({
+          id: randomUUID(),
+          timestamp: Date.now(),
+          actor: 'system' as const,
+          action: 'Cofre de Senhas desativado',
+          detail: 'Menos de 3 senhas - bônus de segurança removido',
+        });
+      }
 
       const gameState = updateGameState(req.session, {
         casualUser: {
           ...currentState.casualUser,
-          passwordVault: currentState.casualUser.passwordVault.filter(p => p.id !== id),
+          passwordVault: newVault,
+          securityMeasures: {
+            ...currentState.casualUser.securityMeasures,
+            passwordVault: !shouldDeactivateVault && currentState.casualUser.securityMeasures.passwordVault,
+          },
         },
+        activityLog,
       });
 
       res.json(gameState);

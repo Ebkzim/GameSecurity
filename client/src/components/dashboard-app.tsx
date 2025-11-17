@@ -5,12 +5,12 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { 
   Shield, ShieldAlert, ShieldCheck, Key, Settings, 
-  Bell, User, Mail, Lock, AlertTriangle 
+  Bell, User, Mail, Lock, AlertTriangle, Activity  
 } from "lucide-react";
 
 interface DashboardAppProps {
   gameState: GameState;
-  onNavigate: (view: "home" | "settings" | "notifications" | "passwords") => void;
+  onNavigate: (view: "home" | "settings" | "notifications" | "passwords" | "activities") => void;
 }
 
 export function DashboardApp({ gameState, onNavigate }: DashboardAppProps) {
@@ -167,6 +167,36 @@ export function DashboardApp({ gameState, onNavigate }: DashboardAppProps) {
             </div>
           </CardContent>
         </Card>
+
+        <Card
+  className="cursor-pointer transition-all hover:shadow-md"
+  onClick={() => onNavigate("activities")}
+>
+  <CardHeader>
+    <div className="flex items-center gap-3">
+      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10">
+        <Activity className="h-5 w-5 text-purple-500" />
+      </div>
+      <div>
+        <CardTitle className="text-base">Log de atividades</CardTitle>
+        <CardDescription>Histórico de ações e eventos da sua conta</CardDescription>
+      </div>
+    </div>
+  </CardHeader>
+
+  <CardContent>
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-muted-foreground">
+        {gameState.activityLog.length} atividade
+        {gameState.activityLog.length !== 1 ? "s" : ""} registrada
+      </span>
+
+      <Button variant="ghost" size="sm">
+        Ver log →
+      </Button>
+    </div>
+  </CardContent>
+</Card>
 
         {!gameState.casualUser.accountCreated && (
           <Card className="border-dashed">

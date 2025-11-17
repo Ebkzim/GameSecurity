@@ -6,9 +6,10 @@ export default {
   theme: {
     extend: {
       borderRadius: {
-        lg: ".5625rem", /* 9px */
-        md: ".375rem", /* 6px */
-        sm: ".1875rem", /* 3px */
+        lg: "9px", /* 9px */
+        md: "6px", /* 6px */
+        sm: "3px",
+        nn:  "0px" 
       },
       colors: {
         // Flat / base colors (regular buttons)

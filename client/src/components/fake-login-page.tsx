@@ -46,13 +46,13 @@ export function FakeLoginPage({ gameState, notificationId, onClose }: FakeLoginP
       
       if (variables.accepted) {
         toast({
-          title: "⚠️ Credenciais Comprometidas!",
+          title: "Credenciais Comprometidas!",
           description: "Você inseriu suas credenciais reais em um site falso de phishing.",
           variant: "destructive",
         });
       } else {
         toast({
-          title: "✅ Você se protegeu!",
+          title: "Você se protegeu!",
           description: "Bom trabalho! Você não caiu no golpe de phishing.",
           variant: "default",
         });
@@ -85,17 +85,17 @@ export function FakeLoginPage({ gameState, notificationId, onClose }: FakeLoginP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="relative border-b bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+      <Card className="w-full max-w-md roudeded-sm-lg border-0 shadow-lg">
+        <CardHeader className="relative border-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-t-lg p-6  ">
           <button
             onClick={handleCancel}
-            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+            className="absolute right-4 top-4 rounded-full opacity-70 ring-offset-background transition-opacity hover:opacity-100"
             aria-label="Fechar"
             disabled={isSubmitting}
           >
             <X className="h-4 w-4" />
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20">
               <Gift className="h-6 w-6" />
             </div>
@@ -108,7 +108,7 @@ export function FakeLoginPage({ gameState, notificationId, onClose }: FakeLoginP
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4 pt-6">
+        <CardContent className="space-y-6 pt-7">
           <Alert className="border-amber-200 bg-amber-50">
             <Gift className="h-4 w-4 text-amber-600" />
             <AlertDescription className="text-amber-900">
@@ -116,15 +116,7 @@ export function FakeLoginPage({ gameState, notificationId, onClose }: FakeLoginP
             </AlertDescription>
           </Alert>
 
-          {showWarning && (
-            <Alert className="border-red-200 bg-red-50">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-900">
-                <strong>Atenção:</strong> Este é um site de phishing falso! Suas credenciais reais serão
-                verificadas para fins educativos.
-              </AlertDescription>
-            </Alert>
-          )}
+         
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -188,12 +180,7 @@ export function FakeLoginPage({ gameState, notificationId, onClose }: FakeLoginP
             </div>
           </form>
 
-          <button
-            onClick={() => setShowWarning(!showWarning)}
-            className="w-full text-center text-xs text-muted-foreground hover:text-foreground"
-          >
-            {showWarning ? "Ocultar" : "Mostrar"} aviso de phishing
-          </button>
+          
         </CardContent>
       </Card>
     </div>

@@ -104,6 +104,13 @@ export function HackerPanel({ gameState }: HackerPanelProps) {
       brute_force: ['Hydra', 'John the Ripper', 'Hashcat'],
       keylogger: ['KeyLogger Pro', 'Spyrix', 'Actual Keylogger'],
       password_leak: ['Shodan', 'Have I Been Pwned API', 'DeHashed'],
+      session_hijacking: ['Wireshark', 'Burp Suite', 'OWASP ZAP'],
+      man_in_the_middle: ['Ettercap', 'MITMProxy', 'BetterCAP'],
+      credential_stuffing: ['Sentry MBA', 'SNIPR', 'OpenBullet'],
+      sim_swap: ['SS7 Hack Tools', 'SIMjacker', 'Femtocell Kit'],
+      malware_injection: ['Metasploit', 'Cobalt Strike', 'Empire'],
+      dns_spoofing: ['DNSChef', 'Ettercap DNS', 'DNSMasq'],
+      zero_day_exploit: ['Custom Exploit', 'Exploit-DB', 'NSA Toolkit'],
     };
     return tools[attackId] || [];
   };
@@ -134,6 +141,41 @@ export function HackerPanel({ gameState }: HackerPanelProps) {
         'Shodan': 'shodan search "database" --limit 100',
         'Have I Been Pwned API': 'curl https://api.pwnedpasswords.com/range/HASH',
         'DeHashed': 'dehashed --email target@email.com',
+      },
+      session_hijacking: {
+        'Wireshark': 'wireshark -i eth0 -f "tcp port 443" -w capture.pcap',
+        'Burp Suite': 'burpsuite --proxy-intercept --target https://site.com',
+        'OWASP ZAP': 'zap-cli quick-scan --spider https://target.com',
+      },
+      man_in_the_middle: {
+        'Ettercap': 'ettercap -T -M arp:remote /target-ip/ /gateway-ip/',
+        'MITMProxy': 'mitmproxy --mode transparent --showhost',
+        'BetterCAP': 'bettercap -iface eth0 -caplet http-req-dump',
+      },
+      credential_stuffing: {
+        'Sentry MBA': 'sentry-mba --config bank.ini --proxy list.txt',
+        'SNIPR': 'snipr --combolist leaked.txt --threads 100',
+        'OpenBullet': 'openbullet --config bank.loli --wordlist combos.txt',
+      },
+      sim_swap: {
+        'SS7 Hack Tools': 'ss7-tool --intercept-sms --target +5511999999999',
+        'SIMjacker': 'simjacker-exploit --send-payload --number +55119',
+        'Femtocell Kit': 'femto-cell --clone-sim --imsi 724031234567890',
+      },
+      malware_injection: {
+        'Metasploit': 'msfconsole -x "use exploit/multi/handler; set payload windows/meterpreter/reverse_tcp; exploit"',
+        'Cobalt Strike': 'cobaltstrike --listener https --payload beacon.exe',
+        'Empire': 'empire --stager windows --listener http --execute',
+      },
+      dns_spoofing: {
+        'DNSChef': 'dnschef --fakeip 192.168.1.100 --interface eth0',
+        'Ettercap DNS': 'ettercap -T -q -M arp -P dns_spoof /target// /gateway//',
+        'DNSMasq': 'dnsmasq --address=/bank.com/10.0.0.1 --no-daemon',
+      },
+      zero_day_exploit: {
+        'Custom Exploit': 'python3 zero-day-exploit.py --target 192.168.1.1 --payload reverse-shell',
+        'Exploit-DB': 'searchsploit --exploit "browser RCE" | xargs exploit',
+        'NSA Toolkit': './eternal-blue.exe --target windows-server --port 445',
       },
     };
     return commands[attackId]?.[tool] || '';
@@ -188,22 +230,26 @@ export function HackerPanel({ gameState }: HackerPanelProps) {
   const currentAttack = attackTypes.find(a => a.id === selectedAttack);
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-background">
-      {/* Header minimalista */}
-      <div className="border-b px-6 py-4">
-        <div className="flex items-center gap-2 text-hacker-danger">
-          <Terminal className="h-5 w-5" />
-          <h2 className="text-lg font-semibold">Console do Hacker</h2>
+    <div className="flex h-full flex-col overflow-y-auto bg-slate-950">
+      <div className="border-b border-slate-800 bg-slate-900 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600">
+            <Terminal className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-white">Console do Hacker</h2>
+            <p className="text-xs text-slate-400">Centro de Controle de Ataques</p>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 space-y-8 p-6">
+      <div className="flex-1 space-y-6 p-6">
         {/* Attack Selection */}
         {!gameState.casualUser.accountCreated ? (
-          <div className="flex h-64 items-center justify-center rounded-lg border border-dashed">
+          <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-slate-700">
             <div className="text-center">
-              <Target className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
+              <Target className="mx-auto mb-2 h-8 w-8 text-slate-600" />
+              <p className="text-sm text-slate-400">
                 Aguardando alvo criar conta...
               </p>
             </div>
@@ -211,8 +257,8 @@ export function HackerPanel({ gameState }: HackerPanelProps) {
         ) : (
           <>
             <div>
-              <h3 className="mb-4 text-sm font-medium text-muted-foreground">VETORES DE ATAQUE</h3>
-              <div className="grid gap-2 sm:grid-cols-2">
+              <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Arsenal de Ataques</h3>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {attackTypes.map((attack) => {
                   const cooldown = gameState.hacker.cooldowns[attack.id];
                   const isOnCooldown = !!(cooldown && cooldown > Date.now());
@@ -224,32 +270,32 @@ export function HackerPanel({ gameState }: HackerPanelProps) {
                       onClick={() => !isOnCooldown && handleStartAttack(attack.id)}
                       disabled={isOnCooldown}
                       className={cn(
-                        "relative overflow-hidden rounded-lg border p-4 text-left transition-all",
+                        "relative overflow-hidden rounded-lg border p-3.5 text-left transition-all",
                         isOnCooldown
-                          ? "cursor-not-allowed opacity-50"
-                          : "hover:border-hacker-danger hover:bg-accent"
+                          ? "cursor-not-allowed border-slate-800 bg-slate-900/50 opacity-50"
+                          : "border-slate-800 bg-slate-900 hover:border-red-600 hover:bg-slate-800/80"
                       )}
                     >
                       {isOnCooldown && remainingTime > 0 && (
                         <div
-                          className="absolute bottom-0 left-0 h-1 bg-hacker-danger transition-all"
+                          className="absolute bottom-0 left-0 h-1 bg-red-600 transition-all"
                           style={{
                             width: `${(remainingTime / (attack.cooldown / 1000)) * 100}%`,
                           }}
                         />
                       )}
-                      <div className="flex items-start gap-3">
-                        <div className="rounded-md bg-hacker-danger/10 p-2">
-                          <Zap className="h-5 w-5 text-hacker-danger" />
+                      <div className="flex items-start gap-2.5">
+                        <div className="rounded-md bg-red-600/20 p-1.5">
+                          <Zap className="h-4 w-4 text-red-500" />
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-medium">{attack.name}</h4>
-                          <p className="mt-1 text-xs text-muted-foreground">
+                          <h4 className="text-sm font-semibold text-white">{attack.name}</h4>
+                          <p className="mt-1 text-xs leading-relaxed text-slate-400">
                             {attack.description}
                           </p>
                           {isOnCooldown && (
-                            <p className="mt-2 text-xs font-medium text-hacker-danger">
-                              Cooldown: {remainingTime}s
+                            <p className="mt-2 text-xs font-medium text-red-400">
+                              Recarga: {remainingTime}s
                             </p>
                           )}
                         </div>
@@ -260,21 +306,26 @@ export function HackerPanel({ gameState }: HackerPanelProps) {
               </div>
             </div>
 
-            {/* Stats */}
             <div>
-              <h3 className="mb-4 text-sm font-medium text-muted-foreground">ESTATÍSTICAS</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-lg border bg-muted/30 p-4">
-                  <div className="text-2xl font-bold text-foreground">
+              <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Estatísticas de Ataque</h3>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
+                  <div className="text-2xl font-bold text-white">
                     {gameState.hacker.attacksAttempted}
                   </div>
-                  <div className="text-xs text-muted-foreground">Ataques Tentados</div>
+                  <div className="text-xs text-slate-400">Tentativas</div>
                 </div>
-                <div className="rounded-lg border bg-muted/30 p-4">
-                  <div className="text-2xl font-bold text-hacker-danger">
+                <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
+                  <div className="text-2xl font-bold text-red-500">
                     {gameState.hacker.attacksSuccessful}
                   </div>
-                  <div className="text-xs text-muted-foreground">Ataques Bem-Sucedidos</div>
+                  <div className="text-xs text-slate-400">Sucessos</div>
+                </div>
+                <div className="rounded-lg border border-slate-800 bg-slate-900 p-4">
+                  <div className="text-2xl font-bold text-green-500">
+                    {gameState.vulnerabilityScore}%
+                  </div>
+                  <div className="text-xs text-slate-400">Vulnerabilidade Alvo</div>
                 </div>
               </div>
             </div>

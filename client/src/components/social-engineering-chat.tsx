@@ -233,67 +233,64 @@ export function SocialEngineeringChat({ notificationId, scenarioType }: SocialEn
   };
 
   return (
-    <Card className="mx-auto max-w-2xl border-orange-200 bg-orange-50/50 dark:border-orange-900 dark:bg-orange-950/20">
-      <CardHeader className="border-b border-orange-200 dark:border-orange-900">
+    <Card className="mx-auto max-w-md border-orange-200 shadow-lg bg-white dark:border-orange-800 dark:bg-slate-900">
+      <CardHeader className="border-b border-orange-200 px-4 py-3 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500">
-              <MessageCircle className="h-5 w-5 text-white" />
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500">
+              <MessageCircle className="h-4 w-4 text-white" />
             </div>
             <div>
-              <CardTitle className="text-lg">{scenario.title}</CardTitle>
-              <Badge variant="outline" className="mt-1 border-orange-300 text-orange-700">
-                Engenharia Social
-              </Badge>
+              <CardTitle className="text-sm font-semibold">{scenario.title}</CardTitle>
+              <p className="text-xs text-orange-600 dark:text-orange-400">Engenharia Social</p>
             </div>
           </div>
           <Button 
-            variant="outline" 
+            variant="ghost" 
             size="sm"
             onClick={handleReject}
             disabled={respondMutation.isPending}
-            className="border-red-300 text-red-600 hover:bg-red-50"
+            className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
           >
-            Encerrar Chat
+            Fechar
           </Button>
         </div>
       </CardHeader>
 
       <CardContent className="p-0">
-        {/* Chat Messages */}
-        <div className="h-96 overflow-y-auto bg-white p-4 dark:bg-slate-950">
-          <div className="space-y-4">
+        <div className="h-64 overflow-y-auto bg-gray-50 p-3 dark:bg-slate-950">
+          <div className="space-y-2.5">
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`flex max-w-[80%] gap-2 ${
+                  className={`flex max-w-[85%] gap-2 ${
                     message.sender === 'user' ? 'flex-row-reverse' : 'flex-row'
                   }`}
                 >
                   <div
-                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
+                    className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${
                       message.sender === 'user'
                         ? 'bg-blue-500'
                         : 'bg-orange-500'
                     }`}
                   >
                     {message.sender === 'user' ? (
-                      <User className="h-4 w-4 text-white" />
+                      <User className="h-3 w-3 text-white" />
                     ) : (
-                      <Bot className="h-4 w-4 text-white" />
+                      <Bot className="h-3 w-3 text-white" />
                     )}
                   </div>
                   <div
-                    className={`rounded-lg px-4 py-2 ${
+                    className={`rounded-lg px-3 py-1.5 ${
                       message.sender === 'user'
                         ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
+                        : 'bg-white border border-gray-200 text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100'
                     }`}
                   >
-                    <p className="text-sm">{message.text}</p>
+                    <p className="text-xs leading-relaxed">{message.text}</p>
                   </div>
                 </div>
               </div>
@@ -302,22 +299,22 @@ export function SocialEngineeringChat({ notificationId, scenarioType }: SocialEn
           </div>
         </div>
 
-        {/* Response Options */}
         {!chatEnded && messages.length > 0 && messages[messages.length - 1].options && (
-          <div className="border-t border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
-            <p className="mb-3 text-sm font-medium text-gray-600 dark:text-gray-400">
-              Escolha sua resposta:
+          <div className="border-t border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-slate-900">
+            <p className="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+              Responder:
             </p>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {messages[messages.length - 1].options?.map((option, index) => (
                 <Button
                   key={index}
                   onClick={() => handleOptionClick(index)}
                   variant="outline"
-                  className="w-full justify-start text-left"
+                  size="sm"
+                  className="w-full justify-start text-left h-auto py-2 text-xs"
                   disabled={respondMutation.isPending}
                 >
-                  <Send className="mr-2 h-4 w-4" />
+                  <Send className="mr-1.5 h-3 w-3" />
                   {option}
                 </Button>
               ))}
@@ -326,13 +323,13 @@ export function SocialEngineeringChat({ notificationId, scenarioType }: SocialEn
         )}
 
         {chatEnded && (
-          <div className="border-t border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
-            <div className={`rounded-lg p-4 ${
+          <div className="border-t border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-slate-900">
+            <div className={`rounded-md p-2.5 ${
               wasCompromised 
-                ? 'bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-100' 
-                : 'bg-green-50 text-green-900 dark:bg-green-950 dark:text-green-100'
+                ? 'bg-red-50 text-red-900 dark:bg-red-950/50 dark:text-red-100' 
+                : 'bg-green-50 text-green-900 dark:bg-green-950/50 dark:text-green-100'
             }`}>
-              <p className="text-sm font-medium">
+              <p className="text-xs font-medium">
                 {wasCompromised 
                   ? "⚠️ Cuidado! Você pode ter compartilhado informações sensíveis." 
                   : "✅ Boa! Você não caiu na armadilha."}

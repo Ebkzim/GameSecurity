@@ -266,7 +266,43 @@ export function PasswordStudio({ gameState }: PasswordStudioProps) {
             {gameState.casualUser.passwordVault.length} senha(s) armazenada(s)
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {gameState.casualUser.passwordVault.length >= 3 && gameState.casualUser.securityMeasures.passwordVault && (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-900/20">
+              <div className="flex items-start gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500">
+                  <Key className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                    Bônus de Segurança Ativo!
+                  </p>
+                  <p className="text-xs text-green-700 dark:text-green-300">
+                    Você tem {gameState.casualUser.passwordVault.length} senhas salvas. Isso reduz sua vulnerabilidade em 8%!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {gameState.casualUser.passwordVault.length > 0 && gameState.casualUser.passwordVault.length < 3 && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20">
+              <div className="flex items-start gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500">
+                  <Key className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Quase lá!
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Salve {3 - gameState.casualUser.passwordVault.length} senha(s) a mais para ativar o bônus de segurança!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {gameState.casualUser.passwordVault.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
               <Key className="mx-auto mb-2 h-12 w-12 opacity-20" />

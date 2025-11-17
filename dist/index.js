@@ -202,7 +202,8 @@ var gameStateSchema = z.object({
       trustedDevices: z.boolean().default(false),
       loginAlerts: z.boolean().default(false),
       sessionManagement: z.boolean().default(false),
-      ipWhitelist: z.boolean().default(false)
+      ipWhitelist: z.boolean().default(false),
+      passwordVault: z.boolean().default(false)
     }),
     securitySetupFlows: securitySetupFlowSchema.default({}),
     securityConfig: securityConfigSchema.default({}),
@@ -250,7 +251,6 @@ var attackTypes = [
     name: "Engenharia Social",
     description: "Manipular o usu\xE1rio para revelar informa\xE7\xF5es",
     cooldown: 15e3,
-    // 15 seconds
     icon: "Users"
   },
   {
@@ -280,13 +280,62 @@ var attackTypes = [
     description: "Explorar vazamento de banco de dados",
     cooldown: 35e3,
     icon: "Database"
+  },
+  {
+    id: "session_hijacking",
+    name: "Sequestro de Sess\xE3o",
+    description: "Roubar token de sess\xE3o ativo do usu\xE1rio",
+    cooldown: 28e3,
+    icon: "Cookie"
+  },
+  {
+    id: "man_in_the_middle",
+    name: "Man-in-the-Middle",
+    description: "Interceptar comunica\xE7\xE3o entre usu\xE1rio e servidor",
+    cooldown: 32e3,
+    icon: "Network"
+  },
+  {
+    id: "credential_stuffing",
+    name: "Credential Stuffing",
+    description: "Usar credenciais vazadas de outros sites",
+    cooldown: 26e3,
+    icon: "KeyRound"
+  },
+  {
+    id: "sim_swap",
+    name: "SIM Swap",
+    description: "Clonar SIM card para interceptar SMS",
+    cooldown: 4e4,
+    icon: "Smartphone"
+  },
+  {
+    id: "malware_injection",
+    name: "Inje\xE7\xE3o de Malware",
+    description: "Infectar dispositivo com software malicioso",
+    cooldown: 33e3,
+    icon: "Bug"
+  },
+  {
+    id: "dns_spoofing",
+    name: "DNS Spoofing",
+    description: "Redirecionar para site falso via DNS",
+    cooldown: 29e3,
+    icon: "Globe"
+  },
+  {
+    id: "zero_day_exploit",
+    name: "Zero-Day Exploit",
+    description: "Explorar vulnerabilidade desconhecida",
+    cooldown: 5e4,
+    icon: "Zap"
   }
 ];
 var executeAttackSchema = z.object({
   attackId: z.string()
 });
 var updateSecuritySchema = z.object({
-  measure: z.enum(["twoFactorAuth", "strongPassword", "emailVerification", "securityQuestions", "backupEmail", "authenticatorApp", "smsBackup", "trustedDevices", "loginAlerts", "sessionManagement", "ipWhitelist"]),
+  measure: z.enum(["twoFactorAuth", "strongPassword", "emailVerification", "securityQuestions", "backupEmail", "authenticatorApp", "smsBackup", "trustedDevices", "loginAlerts", "sessionManagement", "ipWhitelist", "passwordVault"]),
   enabled: z.boolean()
 });
 var configureSecuritySchema = z.discriminatedUnion("measure", [
@@ -402,6 +451,7 @@ function calculateVulnerability(gameState) {
   if (measures.loginAlerts && (config.loginAlerts?.emailAlerts || config.loginAlerts?.smsAlerts)) totalReduction += 10;
   if (measures.sessionManagement) totalReduction += 12;
   if (measures.ipWhitelist && config.ipWhitelist?.enabled && config.ipWhitelist?.allowedIPs?.length > 0) totalReduction += 18;
+  if (measures.passwordVault && gameState.casualUser.passwordVault?.length >= 3) totalReduction += 8;
   const vulnerability = Math.max(0, Math.min(100, 100 - totalReduction));
   return vulnerability;
 }
@@ -1007,11 +1057,37 @@ async function registerRoutes(app2) {
         ...result.data,
         createdAt: Date.now()
       };
+      const newVault = [...currentState.casualUser.passwordVault, newPassword];
+      const shouldActivateVault = newVault.length >= 3 && !currentState.casualUser.securityMeasures.passwordVault;
+      const activityLog = [
+        ...currentState.activityLog,
+        {
+          id: randomUUID(),
+          timestamp: Date.now(),
+          actor: "user",
+          action: "Senha salva no cofre",
+          detail: `"${result.data.title}" adicionada ao cofre de senhas`
+        }
+      ];
+      if (shouldActivateVault) {
+        activityLog.push({
+          id: randomUUID(),
+          timestamp: Date.now(),
+          actor: "system",
+          action: "Cofre de Senhas ativado",
+          detail: "3 ou mais senhas armazenadas - b\xF4nus de seguran\xE7a aplicado"
+        });
+      }
       const gameState = updateGameState(req.session, {
         casualUser: {
           ...currentState.casualUser,
-          passwordVault: [...currentState.casualUser.passwordVault, newPassword]
-        }
+          passwordVault: newVault,
+          securityMeasures: {
+            ...currentState.casualUser.securityMeasures,
+            passwordVault: shouldActivateVault || currentState.casualUser.securityMeasures.passwordVault
+          }
+        },
+        activityLog
       });
       res.json(gameState);
     } catch (error) {
@@ -1026,11 +1102,38 @@ async function registerRoutes(app2) {
       }
       const { id } = result.data;
       const currentState = getGameState(req.session);
+      const deletedPassword = currentState.casualUser.passwordVault.find((p) => p.id === id);
+      const newVault = currentState.casualUser.passwordVault.filter((p) => p.id !== id);
+      const shouldDeactivateVault = newVault.length < 3 && currentState.casualUser.securityMeasures.passwordVault;
+      const activityLog = [
+        ...currentState.activityLog,
+        {
+          id: randomUUID(),
+          timestamp: Date.now(),
+          actor: "user",
+          action: "Senha removida do cofre",
+          detail: deletedPassword ? `"${deletedPassword.title}" removida` : "Senha removida"
+        }
+      ];
+      if (shouldDeactivateVault) {
+        activityLog.push({
+          id: randomUUID(),
+          timestamp: Date.now(),
+          actor: "system",
+          action: "Cofre de Senhas desativado",
+          detail: "Menos de 3 senhas - b\xF4nus de seguran\xE7a removido"
+        });
+      }
       const gameState = updateGameState(req.session, {
         casualUser: {
           ...currentState.casualUser,
-          passwordVault: currentState.casualUser.passwordVault.filter((p) => p.id !== id)
-        }
+          passwordVault: newVault,
+          securityMeasures: {
+            ...currentState.casualUser.securityMeasures,
+            passwordVault: !shouldDeactivateVault && currentState.casualUser.securityMeasures.passwordVault
+          }
+        },
+        activityLog
       });
       res.json(gameState);
     } catch (error) {
