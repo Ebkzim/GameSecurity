@@ -1,0 +1,102 @@
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import type { GameState } from "@shared/schema";
+import { CasualUserPanel } from "@/components/casual-user-panel-new";
+import { HackerPanel } from "@/components/hacker-panel-new";
+import { TutorialModal } from "@/components/tutorial-modal";
+import { GameOverModal } from "@/components/game-over-modal";
+
+export default function Game() {
+  const [showTutorial, setShowTutorial] = useState(true);
+  const [showGameOver, setShowGameOver] = useState(false);
+
+  const { data: gameState, isLoading } = useQuery<GameState>({
+    queryKey: ['/api/game-state'],
+  });
+
+  const startGameMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/game/start', {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/game-state'] });
+    },
+  });
+
+  useEffect(() => {
+    if (gameState?.tutorialCompleted && !showTutorial) {
+      if (!gameState.gameStarted) {
+        startGameMutation.mutate();
+      }
+    }
+  }, [gameState?.tutorialCompleted, showTutorial]);
+
+  useEffect(() => {
+    if (gameState?.casualUser.accountCompromised && !showGameOver) {
+      setShowGameOver(true);
+    }
+  }, [gameState?.casualUser.accountCompromised, showGameOver]);
+
+  const handleTutorialComplete = () => {
+    setShowTutorial(false);
+  };
+
+  const handleRestartGame = () => {
+    setShowGameOver(false);
+    startGameMutation.mutate();
+  };
+
+  const handleCloseGameOver = () => {
+    setShowGameOver(false);
+  };
+
+  if (isLoading || !gameState) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
+        <div className="text-center">
+          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <p className="text-slate-300">Carregando jogo...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen flex-col bg-gradient-to-br from-slate-900 to-slate-800">
+      <div className="flex flex-1 overflow-hidden">
+        <div className="hidden lg:grid lg:grid-cols-2 lg:gap-px w-full">
+          <div className="relative">
+            <CasualUserPanel gameState={gameState} />
+            <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-slate-700 to-transparent"></div>
+          </div>
+          <HackerPanel gameState={gameState} />
+        </div>
+
+        <div className="lg:hidden flex flex-col w-full">
+          <div className="flex border-b border-slate-700">
+            <button className="flex-1 py-3 text-sm font-medium border-b-2 border-user-safe bg-user-safe/5 text-slate-100">
+              SUA CONTA
+            </button>
+            <button className="flex-1 py-3 text-sm font-medium text-slate-400">
+              VISÃO DO HACKER
+            </button>
+          </div>
+          <CasualUserPanel gameState={gameState} />
+        </div>
+      </div>
+
+      {showTutorial && (
+        <TutorialModal
+          onComplete={handleTutorialComplete}
+          onClose={() => setShowTutorial(false)}
+        />
+      )}
+
+      <GameOverModal
+        gameState={gameState}
+        onRestart={handleRestartGame}
+        onClose={handleCloseGameOver}
+        isOpen={showGameOver}
+      />
+    </div>
+  );
+}
