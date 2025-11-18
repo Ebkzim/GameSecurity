@@ -37,9 +37,9 @@ export function SettingsApp({ gameState }: SettingsAppProps) {
 
   const createAccountMutation = useMutation({
     mutationFn: (data: CreateAccountRequest) =>
-      apiRequest('POST', '/api/account/create', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/game-state'] });
+      apiRequest<GameState>('POST', '/api/account/create', data),
+    onSuccess: (newGameState) => {
+      queryClient.setQueryData(['/api/game-state'], newGameState);
       toast({
         title: "Conta criada!",
         description: "Sua conta foi criada com sucesso. Agora ative medidas de segurança.",
@@ -49,9 +49,9 @@ export function SettingsApp({ gameState }: SettingsAppProps) {
 
   const updateSecurityMutation = useMutation({
     mutationFn: (data: UpdateSecurityRequest) =>
-      apiRequest('POST', '/api/security/update', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/game-state'] });
+      apiRequest<GameState>('POST', '/api/security/update', data),
+    onSuccess: (newGameState) => {
+      queryClient.setQueryData(['/api/game-state'], newGameState);
     },
   });
 
