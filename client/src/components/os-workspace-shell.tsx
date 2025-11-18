@@ -18,13 +18,14 @@ interface OSWorkspaceShellProps {
 type AppView = "home" | "settings" | "notifications" | "passwords" | "activities" | "help";
 
 export function OSWorkspaceShell({ gameState }: OSWorkspaceShellProps) {
-  const [currentApp, setCurrentApp] = useState<AppView>("settings");
+  const accountCreated = gameState.casualUser.accountCreated;
+  const [currentApp, setCurrentApp] = useState<AppView>(accountCreated ? "home" : "settings");
 
   useEffect(() => {
-  if (gameState.casualUser.accountCreated && currentApp === "settings") {
-    setCurrentApp("home");
-  }
-}, [gameState.casualUser.accountCreated, currentApp]);
+    if (accountCreated && currentApp === "settings") {
+      setCurrentApp("home");
+    }
+  }, [accountCreated]);
 
   const unreadNotifications = gameState.notifications.filter(n => n.isActive).length;
   
@@ -38,7 +39,7 @@ export function OSWorkspaceShell({ gameState }: OSWorkspaceShellProps) {
   ];
 
   const renderApp = () => {
-    if (!gameState.casualUser.accountCreated) {
+    if (!accountCreated) {
       return <SettingsApp gameState={gameState} />;
     }
     
