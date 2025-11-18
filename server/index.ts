@@ -28,6 +28,11 @@ app.use(express.urlencoded({ extended: false }));
 const MemoryStore = createMemoryStore(session);
 const sessionSecret = process.env.SESSION_SECRET || 'dev-secret-change-in-production';
 
+// Trust first proxy (Render uses proxy)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 app.use(session({
   secret: sessionSecret,
   resave: false,
@@ -39,7 +44,7 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
 }));
 
