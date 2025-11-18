@@ -21,10 +21,10 @@ export function OSWorkspaceShell({ gameState }: OSWorkspaceShellProps) {
   const [currentApp, setCurrentApp] = useState<AppView>("settings");
 
   useEffect(() => {
-    if (gameState.casualUser.accountCreated && currentApp === "settings") {
-      setCurrentApp("home");
-    }
-  }, [gameState.casualUser.accountCreated]);
+  if (gameState.casualUser.accountCreated && currentApp === "settings") {
+    setCurrentApp("home");
+  }
+}, [gameState.casualUser.accountCreated, currentApp]);
 
   const unreadNotifications = gameState.notifications.filter(n => n.isActive).length;
   
