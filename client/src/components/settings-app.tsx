@@ -21,6 +21,7 @@ import {
 import { StrongPasswordModal } from "./strong-password-modal";
 import { SecurityQuestionModal } from "./security-question-modal";
 import { RecoveryEmailModal } from "./recovery-email-modal";
+import { WeakPasswordTipModal } from "./weak-password-tip-modal";
 
 interface SettingsAppProps {
   gameState: GameState;
@@ -34,16 +35,25 @@ export function SettingsApp({ gameState }: SettingsAppProps) {
     password: '',
   });
   const [openModal, setOpenModal] = useState<string | null>(null);
+  const [showWeakPasswordTip, setShowWeakPasswordTip] = useState(false);
+  const [createdPasswordStrength, setCreatedPasswordStrength] = useState(0);
 
   const createAccountMutation = useMutation({
     mutationFn: (data: CreateAccountRequest) =>
       apiRequest<GameState>('POST', '/api/account/create', data),
     onSuccess: (newGameState) => {
       queryClient.setQueryData(['/api/game-state'], newGameState);
-      toast({
-        title: "Conta criada!",
-        description: "Sua conta foi criada com sucesso. Agora ative medidas de segurança.",
-      });
+      const strength = calculatePasswordStrength(formData.password);
+      setCreatedPasswordStrength(strength);
+      
+      if (strength < 60) {
+        setShowWeakPasswordTip(true);
+      } else {
+        toast({
+          title: "Conta criada!",
+          description: "Sua conta foi criada com sucesso. Agora ative medidas de segurança.",
+        });
+      }
     },
   });
 
@@ -240,11 +250,11 @@ export function SettingsApp({ gameState }: SettingsAppProps) {
             {!gameState.casualUser.accountCreated ? (
               <form onSubmit={handleCreateAccount} className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Nome Completo</Label>
+                  <Label htmlFor="settings-name">Nome Completo</Label>
                   <div className="relative mt-1.5">
                     <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      id="name"
+                      id="settings-name"
                       type="text"
                       placeholder="Digite seu nome"
                       className="pl-10"
@@ -255,11 +265,11 @@ export function SettingsApp({ gameState }: SettingsAppProps) {
                 </div>
 
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="settings-email">Email</Label>
                   <div className="relative mt-1.5">
                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      id="email"
+                      id="settings-email"
                       type="email"
                       placeholder="seu@email.com"
                       className="pl-10"
@@ -270,11 +280,11 @@ export function SettingsApp({ gameState }: SettingsAppProps) {
                 </div>
 
                 <div>
-                  <Label htmlFor="password">Senha</Label>
+                  <Label htmlFor="settings-password">Senha</Label>
                   <div className="relative mt-1.5">
                     <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      id="password"
+                      id="settings-password"
                       type="password"
                       placeholder="Crie uma senha forte"
                       className="pl-10 font-mono"
@@ -454,6 +464,12 @@ export function SettingsApp({ gameState }: SettingsAppProps) {
       <RecoveryEmailModal 
         open={openModal === 'backupEmail'} 
         onOpenChange={(open) => !open && setOpenModal(null)} 
+      />
+      <WeakPasswordTipModal
+        isOpen={showWeakPasswordTip}
+        onClose={() => setShowWeakPasswordTip(false)}
+        onGoToSettings={() => setOpenModal('strongPassword')}
+        passwordStrength={createdPasswordStrength}
       />
     </div>
   );

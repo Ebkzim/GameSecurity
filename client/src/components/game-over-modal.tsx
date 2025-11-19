@@ -141,14 +141,13 @@ export function GameOverModal({ gameState, onRestart, onClose, isOpen }: GameOve
         </div>
 
         <DialogFooter className="flex gap-2 sm:gap-2">
-          
           <Button
             onClick={handleRestart}
-            className="flex-1 bg-primary text-primary-foreground"
+            className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
             data-testid="button-restart-game"
             disabled={isProcessing}
           >
-            {isProcessing ? "Reiniciando..." : "Jogar Novamente"}
+            {isProcessing ? "Reiniciando..." : "🔄 Jogar Novamente"}
           </Button>
         </DialogFooter>
       </DialogContent>

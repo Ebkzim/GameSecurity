@@ -14,9 +14,10 @@ import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, User, Bot, Send } from "lucide-react";
+import { MessageCircle, User, Bot, Send, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -143,6 +144,7 @@ export function SocialEngineeringChat({ notificationId, scenarioType }: SocialEn
   const [currentStep, setCurrentStep] = useState(0);
   const [chatEnded, setChatEnded] = useState(false);
   const [wasCompromised, setWasCompromised] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Seleciona o cenário baseado no tipo (0-2)
@@ -232,32 +234,33 @@ export function SocialEngineeringChat({ notificationId, scenarioType }: SocialEn
     });
   };
 
+  const handleClose = () => {
+    if (!chatEnded) {
+      setIsOpen(false);
+      setTimeout(() => handleReject(), 200);
+    } else {
+      setIsOpen(false);
+    }
+  };
+
   return (
-    <Card className="mx-auto max-w-md border-orange-200 shadow-lg bg-white dark:border-orange-800 dark:bg-slate-900">
-      <CardHeader className="border-b border-orange-200 px-4 py-3 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30">
-        <div className="flex items-center justify-between">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-md p-0 gap-0">
+        <DialogHeader className="border-b border-orange-200 px-4 py-3 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500">
               <MessageCircle className="h-4 w-4 text-white" />
             </div>
             <div>
-              <CardTitle className="text-sm font-semibold">{scenario.title}</CardTitle>
-              <p className="text-xs text-orange-600 dark:text-orange-400">Engenharia Social</p>
+              <DialogTitle className="text-sm font-semibold">{scenario.title}</DialogTitle>
+              <DialogDescription className="text-xs text-orange-600 dark:text-orange-400">
+                Engenharia Social - Tenha cuidado com o que compartilha
+              </DialogDescription>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={handleReject}
-            disabled={respondMutation.isPending}
-            className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-          >
-            Fechar
-          </Button>
-        </div>
-      </CardHeader>
+        </DialogHeader>
 
-      <CardContent className="p-0">
+        <div className="p-0">
         <div className="h-64 overflow-y-auto bg-gray-50 p-3 dark:bg-slate-950">
           <div className="space-y-2.5">
             {messages.map((message) => (
@@ -337,7 +340,8 @@ export function SocialEngineeringChat({ notificationId, scenarioType }: SocialEn
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

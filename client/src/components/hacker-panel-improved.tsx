@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { HackerHelpGuide } from "@/components/hacker-help-guide";
+import { AttackGuide } from "@/components/attack-guide";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface HackerPanelProps {
@@ -28,7 +29,6 @@ export function HackerPanelImproved({ gameState }: HackerPanelProps) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [attackProgress, setAttackProgress] = useState(0);
   const [attackMode, setAttackMode] = useState<'facilitated' | 'manual'>('facilitated');
-  const [showGuide, setShowGuide] = useState(false);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const attackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -253,36 +253,41 @@ export function HackerPanelImproved({ gameState }: HackerPanelProps) {
   const currentAttack = attackTypes.find(a => a.id === selectedAttack);
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-slate-950">
-      <div className="border-b border-slate-800 bg-slate-900 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600">
-              <Terminal className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-white">Console do Hacker</h2>
-              <p className="text-xs text-slate-400">Centro de Controle de Ataques</p>
-            </div>
+    <div className="flex h-full flex-col overflow-hidden bg-slate-950">
+      <div className="border-b border-slate-800 bg-slate-900 px-4 py-3 lg:px-6 lg:py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-red-600 to-orange-600">
+            <Terminal className="h-6 w-6 text-white" />
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowGuide(!showGuide)}
-            className="gap-2"
-          >
-            <BookOpen className="h-4 w-4" />
-            {showGuide ? 'Fechar' : 'Guia'}
-          </Button>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-semibold text-white truncate">Console do Hacker</h2>
+            <p className="text-xs text-slate-400 truncate">Centro de Controle de Ataques</p>
+          </div>
         </div>
       </div>
 
-      {showGuide ? (
-        <div className="flex-1 overflow-auto p-6">
-          <HackerHelpGuide />
+      <Tabs defaultValue="attacks" className="flex-1 flex flex-col overflow-hidden">
+        <div className="border-b border-slate-800 bg-slate-900 px-4 lg:px-6">
+          <TabsList className="w-full justify-start bg-transparent border-0 p-0 h-auto">
+            <TabsTrigger 
+              value="attacks" 
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-red-500 data-[state=active]:bg-transparent px-4 py-3"
+            >
+              <Target className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Ataques</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="guide"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-red-500 data-[state=active]:bg-transparent px-4 py-3"
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Guia de Ataques</span>
+            </TabsTrigger>
+          </TabsList>
         </div>
-      ) : (
-        <div className="flex-1 space-y-6 p-6">
+
+        <TabsContent value="attacks" className="flex-1 overflow-auto mt-0 focus-visible:outline-none focus-visible:ring-0">
+        <div className="flex-1 space-y-6 p-4 lg:p-6">
           {/* Attack Mode Selection */}
           <div>
             <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Modo de Ataque</h3>
@@ -432,8 +437,13 @@ export function HackerPanelImproved({ gameState }: HackerPanelProps) {
               </div>
             </>
           )}
-        </div>
-      )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="guide" className="flex-1 overflow-auto mt-0 focus-visible:outline-none focus-visible:ring-0">
+          <AttackGuide />
+        </TabsContent>
+      </Tabs>
 
       {/* Attack Execution Dialog */}
       <Dialog open={selectedAttack !== null} onOpenChange={() => setSelectedAttack(null)}>
