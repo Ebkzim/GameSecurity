@@ -473,8 +473,8 @@ export function SessionManagementModal({ open, onOpenChange }: SecurityModalProp
   const [maxSessions, setMaxSessions] = useState(3);
   const [autoLogoutMinutes, setAutoLogoutMinutes] = useState(30);
   const [activeSessions] = useState([
-    { id: "1", deviceName: "Chrome Windows", location: "São Paulo, BR", lastActive: Date.now() },
-    { id: "2", deviceName: "Safari iPhone", location: "Rio de Janeiro, BR", lastActive: Date.now() - 3600000 },
+    { id: "1", deviceName: "Chrome Windows", location: "Belo Horizonte, MG", lastActive: Date.now() },
+    { id: "2", deviceName: "Safari iPhone", location: "Belo Horizonte, MG", lastActive: Date.now() - 3600000 },
   ]);
 
   const configureMutation = useMutation({
@@ -550,7 +550,7 @@ export function SessionManagementModal({ open, onOpenChange }: SecurityModalProp
                         Ativo há {Math.round((Date.now() - session.lastActive) / 60000)}min
                       </p>
                     </div>
-                    <Button variant="ghost" size="sm">Encerrar</Button>
+                   <Button variant="ghost" size="sm">Encerrar</Button>  
                   </div>
                 </div>
               ))}

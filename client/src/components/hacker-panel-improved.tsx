@@ -273,15 +273,15 @@ export function HackerPanelImproved({ gameState }: HackerPanelProps) {
               value="attacks" 
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-red-500 data-[state=active]:bg-transparent px-4 py-3"
             >
-              <Target className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Ataques</span>
+              <Target className="h-4 w-4 mr-2 text-white" />
+              <span className="hidden sm:inline text-white">Ataques</span>
             </TabsTrigger>
             <TabsTrigger 
               value="guide"
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-red-500 data-[state=active]:bg-transparent px-4 py-3"
             >
-              <BookOpen className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Guia de Ataques</span>
+              <BookOpen className="h-4 w-4 mr-2 text-white" />
+              <span className="hidden sm:inline text-white">Guia de Ataques</span>
             </TabsTrigger>
           </TabsList>
         </div>

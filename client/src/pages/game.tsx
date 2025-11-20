@@ -62,18 +62,20 @@ export default function Game() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gradient-to-br from-slate-900 to-slate-800">
-      <div className="flex flex-1 overflow-hidden">
-        <div className="hidden lg:grid lg:grid-cols-2 lg:gap-px w-full">
-          <div className="relative">
+    <div className="flex h-screen flex-col bg-gradient-to-br from-slate-900 to-slate-800 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
+        <div className="hidden lg:grid lg:grid-cols-2 lg:gap-px w-full overflow-hidden">
+          <div className="relative overflow-hidden">
             <CasualUserPanel gameState={gameState} />
             <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-slate-700 to-transparent"></div>
           </div>
-          <HackerPanelImproved gameState={gameState} />
+          <div className="overflow-hidden">
+            <HackerPanelImproved gameState={gameState} />
+          </div>
         </div>
 
-        <div className="lg:hidden flex flex-col w-full">
-          <div className="flex border-b border-slate-700">
+        <div className="lg:hidden flex flex-col w-full overflow-hidden">
+          <div className="flex border-b border-slate-700 flex-shrink-0">
             <button 
               onClick={() => setMobileView('user')}
               className={`flex-1 py-3 text-sm font-medium transition-colors ${
@@ -95,11 +97,13 @@ export default function Game() {
               VISÃO DO HACKER
             </button>
           </div>
-          {mobileView === 'user' ? (
-            <CasualUserPanel gameState={gameState} />
-          ) : (
-            <HackerPanelImproved gameState={gameState} />
-          )}
+          <div className="flex-1 overflow-auto min-h-0">
+            {mobileView === 'user' ? (
+              <CasualUserPanel gameState={gameState} />
+            ) : (
+              <HackerPanelImproved gameState={gameState} />
+            )}
+          </div>
         </div>
       </div>
 
