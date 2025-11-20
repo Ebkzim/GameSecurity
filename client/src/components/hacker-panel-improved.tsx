@@ -92,16 +92,20 @@ export function HackerPanelImproved({ gameState }: HackerPanelProps) {
           }
           return 100;
         }
-        return prev + 1;
+        return prev + 2;
       });
-    }, 30);
+    }, 50);
     
-    // Executar ataque após animação
+    // Executar ataque após animação e exibição completa das mensagens
     attackTimeoutRef.current = setTimeout(() => {
-      executeAttackMutation.mutate(selectedAttack);
-      setIsExecuting(false);
-      setAttackProgress(0);
-    }, 3000);
+      setAttackProgress(100);
+      // Aguarda mais um pouco para garantir que todas as mensagens sejam exibidas
+      setTimeout(() => {
+        executeAttackMutation.mutate(selectedAttack);
+        setIsExecuting(false);
+        setAttackProgress(0);
+      }, 1500);
+    }, 4000);
   };
 
   const getAttackTools = (attackId: string) => {

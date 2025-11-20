@@ -472,7 +472,7 @@ export function SessionManagementModal({ open, onOpenChange }: SecurityModalProp
   const { toast } = useToast();
   const [maxSessions, setMaxSessions] = useState(3);
   const [autoLogoutMinutes, setAutoLogoutMinutes] = useState(30);
-  const [activeSessions] = useState([
+  const [activeSessions, setActiveSessions] = useState([
     { id: "1", deviceName: "Chrome Windows", location: "Belo Horizonte, MG", lastActive: Date.now() },
     { id: "2", deviceName: "Safari iPhone", location: "Belo Horizonte, MG", lastActive: Date.now() - 3600000 },
   ]);
@@ -489,6 +489,15 @@ export function SessionManagementModal({ open, onOpenChange }: SecurityModalProp
       onOpenChange(false);
     },
   });
+
+  const handleEndSession = (sessionId: string) => {
+    const session = activeSessions.find(s => s.id === sessionId);
+    setActiveSessions(activeSessions.filter(s => s.id !== sessionId));
+    toast({
+      title: "Sessão encerrada!",
+      description: `A sessão ${session?.deviceName} foi encerrada com sucesso.`,
+    });
+  };
 
   const handleSave = () => {
     configureMutation.mutate({
@@ -550,7 +559,7 @@ export function SessionManagementModal({ open, onOpenChange }: SecurityModalProp
                         Ativo há {Math.round((Date.now() - session.lastActive) / 60000)}min
                       </p>
                     </div>
-                   <Button variant="ghost" size="sm">Encerrar</Button>  
+                   <Button variant="ghost" size="sm" onClick={() => handleEndSession(session.id)}>Encerrar</Button>  
                   </div>
                 </div>
               ))}

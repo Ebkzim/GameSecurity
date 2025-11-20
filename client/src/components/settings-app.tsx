@@ -111,12 +111,22 @@ export function SettingsApp({ gameState }: SettingsAppProps) {
 
   const calculatePasswordStrength = (password: string): number => {
     let strength = 0;
-    if (password.length >= 8) strength += 20;
-    if (password.length >= 12) strength += 20;
-    if (/[a-z]/.test(password)) strength += 20;
-    if (/[A-Z]/.test(password)) strength += 20;
-    if (/[0-9]/.test(password)) strength += 10;
-    if (/[^a-zA-Z0-9]/.test(password)) strength += 10;
+    const hasNumbers = /[0-9]/.test(password);
+    const hasSymbols = /[^a-zA-Z0-9]/.test(password);
+    
+    if (password.length >= 8) strength += 15;
+    if (password.length >= 12) strength += 15;
+    if (/[a-z]/.test(password)) strength += 10;
+    if (/[A-Z]/.test(password)) strength += 10;
+    if (hasNumbers) strength += 25;
+    if (hasSymbols) strength += 25;
+    
+    // Senhas sem números E sem símbolos são limitadas a 50 pontos (sempre mostram modal)
+    // Para evitar o modal, a senha deve ter pelo menos números OU símbolos
+    if (!hasNumbers && !hasSymbols) {
+      strength = Math.min(strength, 50);
+    }
+    
     return Math.min(strength, 100);
   };
 
@@ -300,12 +310,12 @@ export function SettingsApp({ gameState }: SettingsAppProps) {
                           className={
                             passwordStrength >= 80
                               ? "text-user-safe"
-                              : passwordStrength >= 50
+                              : passwordStrength >= 60
                               ? "text-warning"
                               : "text-hacker-danger"
                           }
                         >
-                          {passwordStrength >= 80 ? "Forte" : passwordStrength >= 50 ? "Média" : "Fraca"}
+                          {passwordStrength >= 80 ? "Forte" : passwordStrength >= 60 ? "Média" : "Fraca"}
                         </span>
                       </div>
                       <Progress value={passwordStrength} className="h-1.5" />

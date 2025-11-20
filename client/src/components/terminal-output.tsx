@@ -38,7 +38,7 @@ export function TerminalOutput({ lines, isRunning, className, showProgress, prog
       const timeout = setTimeout(() => {
         setCurrentLineText(prev => prev + currentLine.text[charIndex]);
         setCharIndex(prev => prev + 1);
-      }, currentLine.type === 'input' ? 20 : 8);
+      }, currentLine.type === 'input' ? 15 : 5);
       
       return () => clearTimeout(timeout);
     } else {
@@ -47,7 +47,7 @@ export function TerminalOutput({ lines, isRunning, className, showProgress, prog
         setCurrentLineText('');
         setCharIndex(0);
         setCurrentLineIndex(prev => prev + 1);
-      }, currentLine.delay || 100);
+      }, currentLine.delay || 50);
       
       return () => clearTimeout(timeout);
     }
@@ -85,7 +85,7 @@ export function TerminalOutput({ lines, isRunning, className, showProgress, prog
       
       <div className="space-y-1 max-h-64 overflow-y-auto">
         {displayedLines.map((line, index) => (
-          <div key={index} className="flex items-start gap-2 animate-in fade-in slide-in-from-left-2">
+          <div key={index} className="flex items-start gap-2">
             {line.type === 'input' && <span className="text-green-400">{'>'}</span>}
             <span className={cn(getLineColor(line.type), "break-all")}>{line.text}</span>
           </div>
