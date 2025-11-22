@@ -54,7 +54,7 @@ export function FakeVictoryModal({ isOpen, onInstallClick, onNotInterested }: Fa
             transition={{ delay: 0.3 }}
             className="text-3xl font-bold text-orange-600 mb-4"
           >
-            🎉 PARABÉNS! VOCÊ VENCEU! 🎉
+            PARABÉNS! VOCÊ VENCEU!
           </motion.h2>
 
           <motion.p
