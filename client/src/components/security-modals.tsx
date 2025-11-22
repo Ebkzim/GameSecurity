@@ -22,6 +22,39 @@ interface SecurityModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Formata número de telefone para (XX) XXXXX-XXXX
+function formatPhoneNumber(value: string): string {
+  const numbers = value.replace(/\D/g, '');
+  if (numbers.length === 0) return '';
+  if (numbers.length <= 2) return `(${numbers}`;
+  if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+  return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+}
+
+// Formata endereço IP para XXX.XXX.XXX.XXX
+function formatIPAddress(value: string): string {
+  const numbers = value.replace(/\D/g, '');
+  if (numbers.length === 0) return '';
+  
+  let formatted = '';
+  for (let i = 0; i < numbers.length && i < 12; i++) {
+    if (i > 0 && i % 3 === 0) formatted += '.';
+    formatted += numbers[i];
+  }
+  
+  // Validar segmentos de IP (máx 3 dígitos e máx 255)
+  const parts = formatted.split('.');
+  const validParts = parts.map((part, idx) => {
+    if (idx < 3) {
+      const num = parseInt(part) || 0;
+      return Math.min(255, num).toString();
+    }
+    return part;
+  });
+  
+  return validParts.join('.');
+}
+
 export function AuthenticatorAppModal({ open, onOpenChange }: SecurityModalProps) {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
@@ -223,10 +256,10 @@ export function SmsBackupModal({ open, onOpenChange }: SecurityModalProps) {
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+55 (11) 99999-9999"
+                  placeholder="(11) 99999-9999"
                   className="mt-2"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  value={formatPhoneNumber(phoneNumber)}
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
                 />
                 <p className="mt-2 text-xs text-muted-foreground">
                   Usaremos este número para enviar códigos de verificação
@@ -649,8 +682,8 @@ export function IpWhitelistModal({ open, onOpenChange }: SecurityModalProps) {
                   <Input
                     id="new-ip"
                     placeholder="192.168.1.1"
-                    value={newIp}
-                    onChange={(e) => setNewIp(e.target.value)}
+                    value={formatIPAddress(newIp)}
+                    onChange={(e) => setNewIp(e.target.value.replace(/\D/g, ''))}
                   />
                   <Button onClick={handleAddIp} disabled={!newIp.trim()}>
                     Adicionar

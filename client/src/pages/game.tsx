@@ -7,14 +7,24 @@ import { HackerPanelImproved } from "@/components/hacker-panel-improved";
 import { TutorialModal } from "@/components/tutorial-modal";
 import { GameOverModal } from "@/components/game-over-modal";
 import { WeakPasswordTipModal } from "@/components/weak-password-tip-modal";
+import { FakeVictoryModal } from "@/components/fake-victory-modal";
+import { VirusPopups } from "@/components/virus-popups";
+import { RealVictoryModal } from "@/components/real-victory-modal";
+import { LossModal } from "@/components/loss-modal";
 
 export default function Game() {
   const [showTutorial, setShowTutorial] = useState(true);
   const [showGameOver, setShowGameOver] = useState(false);
   const [mobileView, setMobileView] = useState<'user' | 'hacker'>('user');
   const [showWeakPasswordModal, setShowWeakPasswordModal] = useState(false);
+  const [showFakeVictory, setShowFakeVictory] = useState(false);
+  const [showVirusPopups, setShowVirusPopups] = useState(false);
+  const [showRealVictory, setShowRealVictory] = useState(false);
+  const [showLossModal, setShowLossModal] = useState(false);
+  const [activeRoundId, setActiveRoundId] = useState<string | null>(null);
+  const [forceOpenStrongPassword, setForceOpenStrongPassword] = useState(false);
 
-  const { data: gameState, isLoading } = useQuery<GameState>({
+  const { data: gameState, isLoading, isFetching } = useQuery<GameState>({
     queryKey: ['/api/game-state'],
   });
 
@@ -40,6 +50,47 @@ export default function Game() {
   }, [gameState?.casualUser.accountCompromised, showGameOver]);
 
   useEffect(() => {
+    if (gameState && !isFetching && gameState.roundId) {
+      if (gameState.roundId !== activeRoundId) {
+        setActiveRoundId(gameState.roundId);
+        setShowFakeVictory(false);
+        setShowVirusPopups(false);
+        setShowRealVictory(false);
+        setShowLossModal(false);
+      }
+    }
+  }, [gameState?.roundId, isFetching, activeRoundId]);
+
+  useEffect(() => {
+    if (gameState && 
+        !isFetching && 
+        activeRoundId && 
+        gameState.roundId === activeRoundId &&
+        !gameState.casualUser.accountCompromised &&
+        gameState.gameStarted) {
+      // Contar medidas de segurança ativas
+      const measures = gameState.casualUser.securityMeasures;
+      const activeMeasures = Object.values(measures).filter(Boolean).length;
+      const REQUIRED_MEASURES_FOR_VICTORY = 11;
+      const TOTAL_ATTACKS = 12;
+      
+      // Vitória: 11/11 defesas E todos os 12 ataques falharam
+      const allAttacksFailed = 
+        gameState.hacker.attacksAttempted >= TOTAL_ATTACKS && 
+        gameState.hacker.attacksSuccessful === 0;
+      
+      if (activeMeasures >= REQUIRED_MEASURES_FOR_VICTORY && 
+          allAttacksFailed &&
+          !showFakeVictory && 
+          !showVirusPopups && 
+          !showRealVictory &&
+          !showLossModal) {
+        setShowFakeVictory(true);
+      }
+    }
+  }, [gameState, isFetching, activeRoundId, showFakeVictory, showVirusPopups, showRealVictory, showLossModal]);
+
+  useEffect(() => {
     if (gameState?.notifications) {
       const weakPasswordNotif = gameState.notifications.find(
         n => n.type === 'weak_password_warning' && n.isActive
@@ -58,11 +109,34 @@ export default function Game() {
 
   const handleRestartGame = () => {
     setShowGameOver(false);
+    setShowFakeVictory(false);
+    setShowVirusPopups(false);
+    setShowRealVictory(false);
+    setShowLossModal(false);
     startGameMutation.mutate();
   };
 
   const handleCloseGameOver = () => {
     setShowGameOver(false);
+  };
+
+  const handleFakeVictoryInstall = () => {
+    setShowFakeVictory(false);
+    setShowVirusPopups(true);
+  };
+
+  const handleFakeVictoryNotInterested = () => {
+    setShowFakeVictory(false);
+    setShowRealVictory(true);
+  };
+
+  const handleVirusPopupsClose = () => {
+    setShowVirusPopups(false);
+  };
+
+  const handleAntiVirusIrisClicked = () => {
+    setShowVirusPopups(false);
+    setShowLossModal(true);
   };
 
   const handleWeakPasswordClose = () => {
@@ -100,7 +174,7 @@ export default function Game() {
       <div className="flex flex-1 overflow-hidden min-h-0">
         <div className="hidden lg:grid lg:grid-cols-2 lg:gap-px w-full overflow-hidden">
           <div className="relative overflow-hidden">
-            <CasualUserPanel gameState={gameState} />
+            <CasualUserPanel gameState={gameState} forceOpenStrongPassword={forceOpenStrongPassword} setForceOpenStrongPassword={setForceOpenStrongPassword} />
             <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-slate-700 to-transparent"></div>
           </div>
           <div className="overflow-hidden">
@@ -160,12 +234,37 @@ export default function Game() {
           isOpen={showWeakPasswordModal}
           onClose={handleWeakPasswordClose}
           onGoToSettings={() => {
-            // This will be handled by the parent component navigation
             setShowWeakPasswordModal(false);
+            setForceOpenStrongPassword(true);
           }}
           passwordStrength={getWeakPasswordStrength()}
         />
       )}
+
+      <FakeVictoryModal
+        isOpen={showFakeVictory}
+        onInstallClick={handleFakeVictoryInstall}
+        onNotInterested={handleFakeVictoryNotInterested}
+      />
+
+      <VirusPopups
+        isActive={showVirusPopups}
+        onClose={handleVirusPopupsClose}
+        onAntiVirusIrisClicked={handleAntiVirusIrisClicked}
+      />
+
+      {gameState && (
+        <RealVictoryModal
+          isOpen={showRealVictory}
+          onRestart={handleRestartGame}
+          gameState={gameState}
+        />
+      )}
+
+      <LossModal
+        isOpen={showLossModal}
+        onRestart={handleRestartGame}
+      />
     </div>
   );
 }

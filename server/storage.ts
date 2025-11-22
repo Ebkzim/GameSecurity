@@ -46,6 +46,7 @@ export const initialGameState: GameState = {
       loginAlerts: false,
       sessionManagement: false,
       ipWhitelist: false,
+      passwordVault: false,
     },
     securitySetupFlows: {},
     securityConfig: {
@@ -68,6 +69,7 @@ export const initialGameState: GameState = {
   vulnerabilityScore: 100,
   gameStarted: false,
   tutorialCompleted: false,
+  roundId: '0',
   activityLog: [],
 };
 

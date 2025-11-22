@@ -72,7 +72,7 @@ export function NotificationsCenter({ gameState }: NotificationsCenterProps) {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'phishing':
+      case 'Menssagem':
         return <Mail className="h-5 w-5 text-amber-500" />;
       case 'social_engineering':
         return <AlertTriangle className="h-5 w-5 text-orange-500" />;
@@ -93,8 +93,8 @@ export function NotificationsCenter({ gameState }: NotificationsCenterProps) {
 
   const getNotificationTypeLabel = (type: string) => {
     switch (type) {
-      case 'phishing':
-        return 'Phishing';
+      case 'Menssagem':
+        return 'Menssagem';
       case 'social_engineering':
         return 'Engenharia Social';
       case 'security_alert':

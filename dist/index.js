@@ -47,7 +47,8 @@ var initialGameState = {
       trustedDevices: false,
       loginAlerts: false,
       sessionManagement: false,
-      ipWhitelist: false
+      ipWhitelist: false,
+      passwordVault: false
     },
     securitySetupFlows: {},
     securityConfig: {
@@ -70,6 +71,7 @@ var initialGameState = {
   vulnerabilityScore: 100,
   gameStarted: false,
   tutorialCompleted: false,
+  roundId: "0",
   activityLog: []
 };
 function getGameState(session2) {
@@ -239,6 +241,7 @@ var gameStateSchema = z.object({
   vulnerabilityScore: z.number().min(0).max(100).default(100),
   gameStarted: z.boolean().default(false),
   tutorialCompleted: z.boolean().default(false),
+  roundId: z.string().default("0"),
   activityLog: z.array(z.object({
     id: z.string(),
     timestamp: z.number(),
@@ -492,6 +495,17 @@ function getAttackSuccessChance(attackId, gameState) {
   const measures = gameState.casualUser.securityMeasures;
   const config = gameState.casualUser.securityConfig || {};
   const passwordStrength = calculatePasswordStrength(gameState.casualUser.password || "");
+  const allMeasuresActive = measures.twoFactorAuth && measures.strongPassword && measures.emailVerification && measures.securityQuestions && measures.backupEmail && measures.authenticatorApp && measures.smsBackup && measures.trustedDevices && measures.loginAlerts && measures.sessionManagement && measures.ipWhitelist && measures.passwordVault;
+  const allConfigurationsValid = passwordStrength >= 80 && // Senha forte configurada
+  config.ipWhitelist?.enabled && // IP Whitelist ativo
+  (config.ipWhitelist?.allowedIPs?.length ?? 0) > 0 && // Pelo menos 1 IP na whitelist
+  (config.trustedDevices?.devices?.length ?? 0) > 0 && // Pelo menos 1 dispositivo confiável
+  (config.loginAlerts?.emailAlerts || config.loginAlerts?.smsAlerts) && // Alertas configurados
+  config.smsBackup?.verified && // SMS backup verificado
+  (gameState.casualUser.passwordVault?.length ?? 0) >= 3;
+  if (allMeasuresActive && allConfigurationsValid) {
+    return 0;
+  }
   let baseChance = 70;
   switch (attackId) {
     case "brute_force":
@@ -634,10 +648,14 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/game/start", async (req, res) => {
     try {
+      const currentState = getGameState(req.session);
+      const currentRoundId = parseInt(currentState.roundId || "0");
+      const newRoundId = (currentRoundId + 1).toString();
       resetGameState(req.session);
       const gameState = updateGameState(req.session, {
         gameStarted: true,
-        tutorialCompleted: true
+        tutorialCompleted: true,
+        roundId: newRoundId
       });
       res.json(gameState);
     } catch (error) {
@@ -1288,6 +1306,14 @@ async function registerRoutes(app2) {
       res.json({ password });
     } catch (error) {
       res.status(500).json({ error: "Failed to generate password" });
+    }
+  });
+  app2.post("/api/game/reset", async (req, res) => {
+    try {
+      const gameState = resetGameState(req.session);
+      res.json(gameState);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to reset game" });
     }
   });
   const httpServer = createServer(app2);

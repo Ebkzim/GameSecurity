@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import type { GameState } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Home, Settings, Bell, Key, Shield, Menu, Activity, BookOpen, MoreHorizontal, X
+  Home, Settings, Bell, Key, Shield, Menu, Activity, BookOpen, MoreHorizontal, X, RotateCcw
 } from "lucide-react";
 import { DashboardApp } from "@/components/dashboard-app";
 import { SettingsApp } from "@/components/settings-app";
@@ -10,20 +10,24 @@ import { NotificationsCenter } from "@/components/notifications-center";
 import { PasswordStudio } from "@/components/password-studio";
 import { ActivityLog } from "@/components/activity-log";
 import { UserHelpGuide } from "@/components/user-help-guide";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 interface OSWorkspaceShellProps {
   gameState: GameState;
+  forceOpenStrongPassword?: boolean;
+  setForceOpenStrongPassword?: (value: boolean) => void;
 }
 
 type AppView = "home" | "settings" | "notifications" | "passwords" | "activities" | "help";
 
-export function OSWorkspaceShell({ gameState }: OSWorkspaceShellProps) {
+export function OSWorkspaceShell({ gameState, forceOpenStrongPassword, setForceOpenStrongPassword }: OSWorkspaceShellProps) {
   const accountCreated = gameState.casualUser.accountCreated;
   const [currentApp, setCurrentApp] = useState<AppView>(accountCreated ? "home" : "settings");
 
@@ -32,6 +36,12 @@ export function OSWorkspaceShell({ gameState }: OSWorkspaceShellProps) {
       setCurrentApp("home");
     }
   }, [accountCreated]);
+
+  useEffect(() => {
+    if (forceOpenStrongPassword) {
+      setCurrentApp("settings");
+    }
+  }, [forceOpenStrongPassword]);
 
   const unreadNotifications = gameState.notifications.filter(n => n.isActive).length;
 
@@ -46,7 +56,7 @@ export function OSWorkspaceShell({ gameState }: OSWorkspaceShellProps) {
       case "activities":
         return <ActivityLog gameState={gameState} />;
       case "settings":
-        return <SettingsApp gameState={gameState} />;
+        return <SettingsApp gameState={gameState} forceOpenStrongPassword={forceOpenStrongPassword} setForceOpenStrongPassword={setForceOpenStrongPassword} />;
       case "notifications":
         return <NotificationsCenter gameState={gameState} />;
       case "passwords":
@@ -60,6 +70,18 @@ export function OSWorkspaceShell({ gameState }: OSWorkspaceShellProps) {
 
   const handleAppChange = (appId: AppView) => {
     setCurrentApp(appId);
+  };
+
+  const handleRestartGame = async () => {
+    if (confirm('Tem certeza que deseja reiniciar o jogo? Toda sua conta e progresso serão perdidos.')) {
+      try {
+        await apiRequest<GameState>('POST', '/api/game/reset', {});
+        await queryClient.invalidateQueries({ queryKey: ['/api/game-state'] });
+        setCurrentApp("settings");
+      } catch (error) {
+        console.error('Failed to restart game:', error);
+      }
+    }
   };
 
   if (!accountCreated) {
@@ -157,6 +179,11 @@ export function OSWorkspaceShell({ gameState }: OSWorkspaceShellProps) {
                   <Key className="h-4 w-4 mr-2" />
                   Gerador de Senhas
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleRestartGame} className="text-red-600 dark:text-red-400">
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Reiniciar Jogo
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </nav>
@@ -200,6 +227,11 @@ export function OSWorkspaceShell({ gameState }: OSWorkspaceShellProps) {
                 <DropdownMenuItem onClick={() => handleAppChange("passwords")}>
                   <Key className="h-4 w-4 mr-2" />
                   Gerador de Senhas
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleRestartGame} className="text-red-600 dark:text-red-400">
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Reiniciar Jogo
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

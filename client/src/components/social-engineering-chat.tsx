@@ -36,8 +36,8 @@ interface SocialEngineeringChatProps {
 const scenarios = [
   {
     // Cenário 1: Suporte Técnico
-    title: "Suporte Técnico - SecureBank",
-    initialMessage: "Olá! Sou do suporte técnico da SecureBank. Detectamos atividade suspeita em sua conta. Para sua segurança, precisamos verificar algumas informações.",
+    title: "Suporte Técnico",
+    initialMessage: "Olá! Sou do suporte técnico. Detectamos atividade suspeita em sua conta. Para sua segurança, precisamos verificar algumas informações.",
     messages: [
       {
         text: "Você é o titular da conta associada ao email {email}?",
@@ -70,7 +70,7 @@ const scenarios = [
   },
   {
     // Cenário 2: Gerente de Banco
-    title: "Gerente de Conta - Banco Digital",
+    title: "Gerente de Conta.",
     initialMessage: "Bom dia! Aqui é a Ana Paula, sua gerente de conta no Banco Digital. Temos uma ótima notícia sobre um upgrade gratuito para sua conta!",
     messages: [
       {

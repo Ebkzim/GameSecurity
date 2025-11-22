@@ -164,6 +164,7 @@ export const gameStateSchema = z.object({
   vulnerabilityScore: z.number().min(0).max(100).default(100),
   gameStarted: z.boolean().default(false),
   tutorialCompleted: z.boolean().default(false),
+  roundId: z.string().default('0'),
   activityLog: z.array(z.object({
     id: z.string(),
     timestamp: z.number(),

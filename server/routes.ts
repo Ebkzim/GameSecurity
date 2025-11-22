@@ -115,6 +115,37 @@ function getAttackSuccessChance(attackId: string, gameState: any): number {
   const config = gameState.casualUser.securityConfig || {};
   const passwordStrength = calculatePasswordStrength(gameState.casualUser.password || '');
   
+  // 🔒 SEGURANÇA 100%: Se TODAS as medidas de segurança estiverem ativas
+  // e configuradas corretamente, a conta é IMPOSSÍVEL de hackear!
+  const allMeasuresActive = 
+    measures.twoFactorAuth &&
+    measures.strongPassword &&
+    measures.emailVerification &&
+    measures.securityQuestions &&
+    measures.backupEmail &&
+    measures.authenticatorApp &&
+    measures.smsBackup &&
+    measures.trustedDevices &&
+    measures.loginAlerts &&
+    measures.sessionManagement &&
+    measures.ipWhitelist &&
+    measures.passwordVault;
+  
+  // Verificar se as configurações necessárias estão preenchidas
+  const allConfigurationsValid = 
+    passwordStrength >= 80 && // Senha forte configurada
+    config.ipWhitelist?.enabled && // IP Whitelist ativo
+    (config.ipWhitelist?.allowedIPs?.length ?? 0) > 0 && // Pelo menos 1 IP na whitelist
+    (config.trustedDevices?.devices?.length ?? 0) > 0 && // Pelo menos 1 dispositivo confiável
+    (config.loginAlerts?.emailAlerts || config.loginAlerts?.smsAlerts) && // Alertas configurados
+    config.smsBackup?.verified && // SMS backup verificado
+    (gameState.casualUser.passwordVault?.length ?? 0) >= 3; // Pelo menos 3 senhas no vault
+  
+  // Se TODAS as medidas estão ativas E corretamente configuradas = IMPOSSÍVEL hackear!
+  if (allMeasuresActive && allConfigurationsValid) {
+    return 0; // 0% de chance = IMPOSSÍVEL!
+  }
+  
   let baseChance = 70;
   
   switch (attackId) {
@@ -281,10 +312,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/game/start", async (req, res) => {
     try {
+      const currentState = getGameState(req.session);
+      const currentRoundId = parseInt(currentState.roundId || '0');
+      const newRoundId = (currentRoundId + 1).toString();
+      
       resetGameState(req.session);
       const gameState = updateGameState(req.session, {
         gameStarted: true,
         tutorialCompleted: true,
+        roundId: newRoundId,
       });
       res.json(gameState);
     } catch (error) {
@@ -1089,6 +1125,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ password });
     } catch (error) {
       res.status(500).json({ error: "Failed to generate password" });
+    }
+  });
+
+  app.post("/api/game/reset", async (req, res) => {
+    try {
+      const gameState = resetGameState(req.session);
+      res.json(gameState);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to reset game" });
     }
   });
 

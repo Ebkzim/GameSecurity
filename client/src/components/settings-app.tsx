@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { GameState, CreateAccountRequest, UpdateSecurityRequest } from "@shared/schema";
@@ -25,9 +25,11 @@ import { WeakPasswordTipModal } from "./weak-password-tip-modal";
 
 interface SettingsAppProps {
   gameState: GameState;
+  forceOpenStrongPassword?: boolean;
+  setForceOpenStrongPassword?: (value: boolean) => void;
 }
 
-export function SettingsApp({ gameState }: SettingsAppProps) {
+export function SettingsApp({ gameState, forceOpenStrongPassword, setForceOpenStrongPassword }: SettingsAppProps) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
@@ -38,6 +40,14 @@ export function SettingsApp({ gameState }: SettingsAppProps) {
   const [showWeakPasswordTip, setShowWeakPasswordTip] = useState(false);
   const [createdPasswordStrength, setCreatedPasswordStrength] = useState(0);
   const [weakPasswordNotif, setWeakPasswordNotif] = useState<any>(null);
+
+  // Abre modal de Senha Forte quando clicado em "Melhorar Agora"
+  useEffect(() => {
+    if (forceOpenStrongPassword) {
+      setOpenModal('strongPassword');
+      setForceOpenStrongPassword?.(false);
+    }
+  }, [forceOpenStrongPassword, setForceOpenStrongPassword]);
 
   const createAccountMutation = useMutation({
     mutationFn: (data: CreateAccountRequest) =>
