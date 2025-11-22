@@ -221,7 +221,7 @@ var gameStateSchema = z.object({
   }),
   notifications: z.array(z.object({
     id: z.string(),
-    type: z.enum(["phishing", "social_engineering", "password_reset", "suspicious_login", "security_alert", "2fa_confirm", "email_verify_confirm"]),
+    type: z.enum(["phishing", "social_engineering", "password_reset", "suspicious_login", "security_alert", "2fa_confirm", "email_verify_confirm", "weak_password_warning"]),
     title: z.string(),
     message: z.string(),
     isActive: z.boolean().default(true),
@@ -232,7 +232,9 @@ var gameStateSchema = z.object({
     // "Saber Mais", "Confirmar", etc
     ctaType: z.enum(["phishing_learn_more", "confirm_2fa", "confirm_email", "confirm_email_verification"]).optional(),
     // Índice do cenário para engenharia social (0, 1, ou 2)
-    scenarioIndex: z.number().min(0).max(2).optional()
+    scenarioIndex: z.number().min(0).max(2).optional(),
+    // Força da senha para notificações de senha fraca
+    passwordStrength: z.number().optional()
   })).default([]),
   vulnerabilityScore: z.number().min(0).max(100).default(100),
   gameStarted: z.boolean().default(false),
@@ -470,12 +472,20 @@ function calculateVulnerability(gameState) {
 }
 function calculatePasswordStrength(password) {
   let strength = 0;
+  const hasLowercase = /[a-z]/.test(password);
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[^a-zA-Z0-9]/.test(password);
   if (password.length >= 8) strength += 20;
   if (password.length >= 12) strength += 20;
-  if (/[a-z]/.test(password)) strength += 20;
-  if (/[A-Z]/.test(password)) strength += 20;
-  if (/[0-9]/.test(password)) strength += 10;
-  if (/[^a-zA-Z0-9]/.test(password)) strength += 10;
+  if (hasLowercase) strength += 20;
+  if (hasUppercase) strength += 20;
+  if (hasNumber) strength += 10;
+  if (hasSpecial) strength += 10;
+  const hasAllRequirements = hasLowercase && hasUppercase && hasNumber && hasSpecial;
+  if (!hasAllRequirements && strength >= 80) {
+    strength = 79;
+  }
   return Math.min(strength, 100);
 }
 function getAttackSuccessChance(attackId, gameState) {
@@ -486,8 +496,8 @@ function getAttackSuccessChance(attackId, gameState) {
   switch (attackId) {
     case "brute_force":
       baseChance = 80;
-      if (measures.authenticatorApp) baseChance = Math.max(0, baseChance - 70);
-      if (measures.twoFactorAuth) baseChance = Math.max(0, baseChance - 60);
+      if (measures.authenticatorApp) baseChance -= 70;
+      if (measures.twoFactorAuth) baseChance -= 60;
       if (measures.strongPassword || passwordStrength >= 80) baseChance -= 40;
       if (measures.ipWhitelist && config.ipWhitelist?.enabled) baseChance -= 20;
       if (measures.sessionManagement) baseChance -= 15;
@@ -502,8 +512,8 @@ function getAttackSuccessChance(attackId, gameState) {
       break;
     case "social_engineering":
       baseChance = 65;
-      if (measures.securityQuestions) baseChance -= 20;
       if (measures.twoFactorAuth) baseChance -= 25;
+      if (measures.securityQuestions) baseChance -= 20;
       if (measures.loginAlerts && (config.loginAlerts?.emailAlerts || config.loginAlerts?.smsAlerts)) baseChance -= 20;
       break;
     case "keylogger":
@@ -518,6 +528,51 @@ function getAttackSuccessChance(attackId, gameState) {
       if (measures.twoFactorAuth) baseChance -= 40;
       if (measures.strongPassword) baseChance -= 20;
       if (measures.smsBackup && config.smsBackup?.verified) baseChance -= 15;
+      break;
+    case "session_hijacking":
+      baseChance = 50;
+      if (measures.loginAlerts && (config.loginAlerts?.emailAlerts || config.loginAlerts?.smsAlerts)) baseChance -= 25;
+      if (measures.sessionManagement) baseChance -= 20;
+      if (measures.trustedDevices && config.trustedDevices?.devices?.length > 0) baseChance -= 15;
+      if (measures.authenticatorApp) baseChance -= 10;
+      break;
+    case "man_in_the_middle":
+      baseChance = 50;
+      if (measures.trustedDevices && config.trustedDevices?.devices?.length > 0) baseChance -= 30;
+      if (measures.authenticatorApp) baseChance -= 20;
+      if (measures.twoFactorAuth) baseChance -= 10;
+      break;
+    case "credential_stuffing":
+      baseChance = 50;
+      if (measures.passwordVault && gameState.casualUser.passwordVault?.length >= 3) baseChance -= 25;
+      if (measures.authenticatorApp) baseChance -= 15;
+      if (measures.twoFactorAuth) baseChance -= 10;
+      if (measures.strongPassword) baseChance -= 5;
+      break;
+    case "sim_swap":
+      baseChance = 50;
+      if (measures.authenticatorApp) baseChance -= 40;
+      if (measures.twoFactorAuth) baseChance -= 10;
+      break;
+    case "malware_injection":
+      baseChance = 50;
+      if (measures.trustedDevices && config.trustedDevices?.devices?.length > 0) baseChance -= 30;
+      if (measures.authenticatorApp) baseChance -= 20;
+      if (measures.sessionManagement) baseChance -= 15;
+      break;
+    case "dns_spoofing":
+      baseChance = 50;
+      if (measures.trustedDevices && config.trustedDevices?.devices?.length > 0) baseChance -= 25;
+      if (measures.loginAlerts && (config.loginAlerts?.emailAlerts || config.loginAlerts?.smsAlerts)) baseChance -= 15;
+      if (measures.authenticatorApp) baseChance -= 10;
+      if (measures.emailVerification) baseChance -= 5;
+      break;
+    case "zero_day_exploit":
+      baseChance = 50;
+      if (measures.authenticatorApp) baseChance -= 25;
+      if (measures.twoFactorAuth) baseChance -= 20;
+      if (measures.ipWhitelist && config.ipWhitelist?.enabled && config.ipWhitelist?.allowedIPs?.length > 0) baseChance -= 10;
+      if (measures.sessionManagement) baseChance -= 5;
       break;
     default:
       baseChance = 50;
@@ -622,6 +677,21 @@ async function registerRoutes(app2) {
         }
       });
       gameState = addActivityLog(gameState, "user", "Conta criada", `Nome: ${name}, Email: ${email}, For\xE7a da senha: ${passwordStrength}%`);
+      if (passwordStrength < 80) {
+        const weakPasswordNotification = {
+          id: randomUUID(),
+          type: "weak_password_warning",
+          title: "Aten\xE7\xE3o: Senha Fraca Detectada",
+          message: `Sua conta foi criada, mas sua senha est\xE1 vulner\xE1vel a ataques. For\xE7a atual: ${passwordStrength}%. Recomendamos melhorar sua senha nas configura\xE7\xF5es.`,
+          requiresAction: false,
+          isActive: true,
+          passwordStrength
+        };
+        gameState = {
+          ...gameState,
+          notifications: [...gameState.notifications, weakPasswordNotification]
+        };
+      }
       const updatedState = updateGameState(req.session, {
         ...gameState,
         vulnerabilityScore: calculateVulnerability(gameState)
@@ -684,14 +754,14 @@ async function registerRoutes(app2) {
         return res.status(400).json({ error: "Password is required" });
       }
       const currentState = getGameState(req.session);
-      const strength = clientStrength || calculatePasswordStrength(password);
+      const strength = calculatePasswordStrength(password);
       const updatedUser = {
         ...currentState.casualUser,
         password,
         securityMeasures: {
           ...currentState.casualUser.securityMeasures,
-          strongPassword: strength >= 60
-          // Ativa se força >= 60%
+          strongPassword: strength >= 80
+          // Ativa se força >= 80% (todos os requisitos)
         },
         securityConfig: {
           ...currentState.casualUser.securityConfig,
@@ -929,6 +999,24 @@ async function registerRoutes(app2) {
       res.json(finalState);
     } catch (error) {
       res.status(500).json({ error: "Failed to execute attack" });
+    }
+  });
+  app2.post("/api/notification/delete", async (req, res) => {
+    try {
+      const { notificationId } = req.body;
+      if (!notificationId) {
+        return res.status(400).json({ error: "Notification ID is required" });
+      }
+      const currentState = getGameState(req.session);
+      const updatedNotifications = currentState.notifications.filter(
+        (n) => n.id !== notificationId
+      );
+      const gameState = updateGameState(req.session, {
+        notifications: updatedNotifications
+      });
+      res.json(gameState);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete notification" });
     }
   });
   app2.post("/api/notification/respond", async (req, res) => {

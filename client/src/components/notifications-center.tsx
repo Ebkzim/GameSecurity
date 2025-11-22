@@ -8,7 +8,7 @@
  * - Confirmações de segurança (2FA, email, etc)
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { GameState, RespondToNotificationRequest } from "@shared/schema";
@@ -45,12 +45,30 @@ export function NotificationsCenter({ gameState }: NotificationsCenterProps) {
     },
   });
 
+  const deleteNotificationMutation = useMutation({
+    mutationFn: (notificationId: string) =>
+      apiRequest('POST', '/api/notification/delete', { notificationId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/game-state'] });
+    },
+  });
+
   const handleRespond = (notificationId: string, accepted: boolean) => {
     respondToNotificationMutation.mutate({ notificationId, accepted });
   };
 
   const activeNotifications = gameState.notifications.filter(n => n.isActive);
   const historicalNotifications = gameState.notifications.filter(n => !n.isActive);
+
+  // Deletar notificações weak_password_warning ao abrir a aba
+  useEffect(() => {
+    const weakPasswordNotifs = gameState.notifications.filter(
+      n => n.type === 'weak_password_warning' && n.isActive
+    );
+    weakPasswordNotifs.forEach(notif => {
+      deleteNotificationMutation.mutate(notif.id);
+    });
+  }, []);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {

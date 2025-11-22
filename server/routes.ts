@@ -88,12 +88,25 @@ function calculateVulnerability(gameState: any): number {
 
 function calculatePasswordStrength(password: string): number {
   let strength = 0;
+  const hasLowercase = /[a-z]/.test(password);
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[^a-zA-Z0-9]/.test(password);
+  
   if (password.length >= 8) strength += 20;
   if (password.length >= 12) strength += 20;
-  if (/[a-z]/.test(password)) strength += 20;
-  if (/[A-Z]/.test(password)) strength += 20;
-  if (/[0-9]/.test(password)) strength += 10;
-  if (/[^a-zA-Z0-9]/.test(password)) strength += 10;
+  if (hasLowercase) strength += 20;
+  if (hasUppercase) strength += 20;
+  if (hasNumber) strength += 10;
+  if (hasSpecial) strength += 10;
+  
+  // Senha só é considerada forte (>=80) se tiver TODOS os requisitos:
+  // maiúscula + minúscula + número + caractere especial
+  const hasAllRequirements = hasLowercase && hasUppercase && hasNumber && hasSpecial;
+  if (!hasAllRequirements && strength >= 80) {
+    strength = 79; // Limita a 79 se não tiver todos os requisitos
+  }
+  
   return Math.min(strength, 100);
 }
 
@@ -107,8 +120,8 @@ function getAttackSuccessChance(attackId: string, gameState: any): number {
   switch (attackId) {
     case 'brute_force':
       baseChance = 80;
-      if (measures.authenticatorApp) baseChance = Math.max(0, baseChance - 70);
-      if (measures.twoFactorAuth) baseChance = Math.max(0, baseChance - 60);
+      if (measures.authenticatorApp) baseChance -= 70;
+      if (measures.twoFactorAuth) baseChance -= 60;
       if (measures.strongPassword || passwordStrength >= 80) baseChance -= 40;
       if (measures.ipWhitelist && config.ipWhitelist?.enabled) baseChance -= 20;
       if (measures.sessionManagement) baseChance -= 15;
@@ -125,8 +138,8 @@ function getAttackSuccessChance(attackId: string, gameState: any): number {
       
     case 'social_engineering':
       baseChance = 65;
-      if (measures.securityQuestions) baseChance -= 20;
       if (measures.twoFactorAuth) baseChance -= 25;
+      if (measures.securityQuestions) baseChance -= 20;
       if (measures.loginAlerts && (config.loginAlerts?.emailAlerts || config.loginAlerts?.smsAlerts)) baseChance -= 20;
       break;
       
@@ -143,6 +156,58 @@ function getAttackSuccessChance(attackId: string, gameState: any): number {
       if (measures.twoFactorAuth) baseChance -= 40;
       if (measures.strongPassword) baseChance -= 20;
       if (measures.smsBackup && config.smsBackup?.verified) baseChance -= 15;
+      break;
+      
+    case 'session_hijacking':
+      baseChance = 50;
+      if (measures.loginAlerts && (config.loginAlerts?.emailAlerts || config.loginAlerts?.smsAlerts)) baseChance -= 25;
+      if (measures.sessionManagement) baseChance -= 20;
+      if (measures.trustedDevices && config.trustedDevices?.devices?.length > 0) baseChance -= 15;
+      if (measures.authenticatorApp) baseChance -= 10;
+      break;
+      
+    case 'man_in_the_middle':
+      baseChance = 50;
+      if (measures.trustedDevices && config.trustedDevices?.devices?.length > 0) baseChance -= 30;
+      if (measures.authenticatorApp) baseChance -= 20;
+      if (measures.twoFactorAuth) baseChance -= 10;
+      break;
+      
+    case 'credential_stuffing':
+      baseChance = 50;
+      if (measures.passwordVault && gameState.casualUser.passwordVault?.length >= 3) baseChance -= 25;
+      if (measures.authenticatorApp) baseChance -= 15;
+      if (measures.twoFactorAuth) baseChance -= 10;
+      if (measures.strongPassword) baseChance -= 5;
+      break;
+      
+    case 'sim_swap':
+      baseChance = 50;
+      if (measures.authenticatorApp) baseChance -= 40;
+      if (measures.twoFactorAuth) baseChance -= 10;
+      break;
+      
+    case 'malware_injection':
+      baseChance = 50;
+      if (measures.trustedDevices && config.trustedDevices?.devices?.length > 0) baseChance -= 30;
+      if (measures.authenticatorApp) baseChance -= 20;
+      if (measures.sessionManagement) baseChance -= 15;
+      break;
+      
+    case 'dns_spoofing':
+      baseChance = 50;
+      if (measures.trustedDevices && config.trustedDevices?.devices?.length > 0) baseChance -= 25;
+      if (measures.loginAlerts && (config.loginAlerts?.emailAlerts || config.loginAlerts?.smsAlerts)) baseChance -= 15;
+      if (measures.authenticatorApp) baseChance -= 10;
+      if (measures.emailVerification) baseChance -= 5;
+      break;
+      
+    case 'zero_day_exploit':
+      baseChance = 50;
+      if (measures.authenticatorApp) baseChance -= 25;
+      if (measures.twoFactorAuth) baseChance -= 20;
+      if (measures.ipWhitelist && config.ipWhitelist?.enabled && config.ipWhitelist?.allowedIPs?.length > 0) baseChance -= 10;
+      if (measures.sessionManagement) baseChance -= 5;
       break;
       
     default:
@@ -265,6 +330,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       gameState = addActivityLog(gameState, 'user', 'Conta criada', `Nome: ${name}, Email: ${email}, Força da senha: ${passwordStrength}%`);
       
+      // Adicionar notificação de senha fraca se a senha não tiver força >= 80
+      if (passwordStrength < 80) {
+        const weakPasswordNotification = {
+          id: randomUUID(),
+          type: 'weak_password_warning' as const,
+          title: 'Atenção: Senha Fraca Detectada',
+          message: `Sua conta foi criada, mas sua senha está vulnerável a ataques. Força atual: ${passwordStrength}%. Recomendamos melhorar sua senha nas configurações.`,
+          requiresAction: false,
+          isActive: true,
+          passwordStrength,
+        };
+        
+        gameState = {
+          ...gameState,
+          notifications: [...gameState.notifications, weakPasswordNotification],
+        };
+      }
+      
       const updatedState = updateGameState(req.session, {
         ...gameState,
         vulnerabilityScore: calculateVulnerability(gameState),
@@ -340,8 +423,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const currentState = getGameState(req.session);
       
-      // Calcular força da senha se não foi enviada ou recalcular para garantir
-      const strength = clientStrength || calculatePasswordStrength(password);
+      // Sempre recalcular força da senha no servidor para garantir segurança
+      const strength = calculatePasswordStrength(password);
       
       // Atualizar senha do usuário
       const updatedUser = {
@@ -349,7 +432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password,
         securityMeasures: {
           ...currentState.casualUser.securityMeasures,
-          strongPassword: strength >= 60, // Ativa se força >= 60%
+          strongPassword: strength >= 80, // Ativa se força >= 80% (todos os requisitos)
         },
         securityConfig: {
           ...currentState.casualUser.securityConfig,
@@ -661,6 +744,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(finalState);
     } catch (error) {
       res.status(500).json({ error: "Failed to execute attack" });
+    }
+  });
+
+  app.post("/api/notification/delete", async (req, res) => {
+    try {
+      const { notificationId } = req.body;
+      if (!notificationId) {
+        return res.status(400).json({ error: "Notification ID is required" });
+      }
+
+      const currentState = getGameState(req.session);
+      const updatedNotifications = currentState.notifications.filter(
+        (n) => n.id !== notificationId
+      );
+
+      const gameState = updateGameState(req.session, {
+        notifications: updatedNotifications,
+      });
+
+      res.json(gameState);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete notification" });
     }
   });
 

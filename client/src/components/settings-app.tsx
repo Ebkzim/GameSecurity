@@ -37,6 +37,7 @@ export function SettingsApp({ gameState }: SettingsAppProps) {
   const [openModal, setOpenModal] = useState<string | null>(null);
   const [showWeakPasswordTip, setShowWeakPasswordTip] = useState(false);
   const [createdPasswordStrength, setCreatedPasswordStrength] = useState(0);
+  const [weakPasswordNotif, setWeakPasswordNotif] = useState<any>(null);
 
   const createAccountMutation = useMutation({
     mutationFn: (data: CreateAccountRequest) =>
@@ -46,14 +47,18 @@ export function SettingsApp({ gameState }: SettingsAppProps) {
       const strength = calculatePasswordStrength(formData.password);
       setCreatedPasswordStrength(strength);
       
-      if (strength < 60) {
-        setShowWeakPasswordTip(true);
-      } else {
-        toast({
-          title: "Conta criada!",
-          description: "Sua conta foi criada com sucesso. Agora ative medidas de segurança.",
-        });
+      // Check for weak_password_warning notification
+      const weakNotif = newGameState.notifications.find(
+        n => n.type === 'weak_password_warning' && n.isActive
+      );
+      if (weakNotif) {
+        setWeakPasswordNotif(weakNotif);
       }
+      
+      toast({
+        title: "Conta criada!",
+        description: "Sua conta foi criada com sucesso. Agora ative medidas de segurança.",
+      });
     },
   });
 
@@ -69,6 +74,16 @@ export function SettingsApp({ gameState }: SettingsAppProps) {
     e.preventDefault();
     if (formData.name && formData.email && formData.password) {
       createAccountMutation.mutate(formData);
+    }
+  };
+
+  const handleCloseWeakPasswordTip = () => {
+    setShowWeakPasswordTip(false);
+    if (weakPasswordNotif) {
+      apiRequest('POST', '/api/notification/delete', { notificationId: weakPasswordNotif.id })
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['/api/game-state'] });
+        });
     }
   };
 

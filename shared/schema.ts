@@ -147,7 +147,7 @@ export const gameStateSchema = z.object({
   }),
   notifications: z.array(z.object({
     id: z.string(),
-    type: z.enum(['phishing', 'social_engineering', 'password_reset', 'suspicious_login', 'security_alert', '2fa_confirm', 'email_verify_confirm']),
+    type: z.enum(['phishing', 'social_engineering', 'password_reset', 'suspicious_login', 'security_alert', '2fa_confirm', 'email_verify_confirm', 'weak_password_warning']),
     title: z.string(),
     message: z.string(),
     isActive: z.boolean().default(true),
@@ -158,6 +158,8 @@ export const gameStateSchema = z.object({
     ctaType: z.enum(['phishing_learn_more', 'confirm_2fa', 'confirm_email', 'confirm_email_verification']).optional(),
     // Índice do cenário para engenharia social (0, 1, ou 2)
     scenarioIndex: z.number().min(0).max(2).optional(),
+    // Força da senha para notificações de senha fraca
+    passwordStrength: z.number().optional(),
   })).default([]),
   vulnerabilityScore: z.number().min(0).max(100).default(100),
   gameStarted: z.boolean().default(false),

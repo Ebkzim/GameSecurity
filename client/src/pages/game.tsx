@@ -6,11 +6,13 @@ import { CasualUserPanel } from "@/components/casual-user-panel-new";
 import { HackerPanelImproved } from "@/components/hacker-panel-improved";
 import { TutorialModal } from "@/components/tutorial-modal";
 import { GameOverModal } from "@/components/game-over-modal";
+import { WeakPasswordTipModal } from "@/components/weak-password-tip-modal";
 
 export default function Game() {
   const [showTutorial, setShowTutorial] = useState(true);
   const [showGameOver, setShowGameOver] = useState(false);
   const [mobileView, setMobileView] = useState<'user' | 'hacker'>('user');
+  const [showWeakPasswordModal, setShowWeakPasswordModal] = useState(false);
 
   const { data: gameState, isLoading } = useQuery<GameState>({
     queryKey: ['/api/game-state'],
@@ -37,6 +39,19 @@ export default function Game() {
     }
   }, [gameState?.casualUser.accountCompromised, showGameOver]);
 
+  useEffect(() => {
+    if (gameState?.notifications) {
+      const weakPasswordNotif = gameState.notifications.find(
+        n => n.type === 'weak_password_warning' && n.isActive
+      );
+      if (weakPasswordNotif) {
+        setShowWeakPasswordModal(true);
+      } else {
+        setShowWeakPasswordModal(false);
+      }
+    }
+  }, [gameState?.notifications]);
+
   const handleTutorialComplete = () => {
     setShowTutorial(false);
   };
@@ -48,6 +63,25 @@ export default function Game() {
 
   const handleCloseGameOver = () => {
     setShowGameOver(false);
+  };
+
+  const handleWeakPasswordClose = () => {
+    setShowWeakPasswordModal(false);
+    if (gameState?.notifications) {
+      const weakPasswordNotif = gameState.notifications.find(
+        n => n.type === 'weak_password_warning'
+      );
+      if (weakPasswordNotif) {
+        apiRequest('POST', '/api/notification/delete', { notificationId: weakPasswordNotif.id });
+      }
+    }
+  };
+
+  const getWeakPasswordStrength = () => {
+    const weakPasswordNotif = gameState?.notifications.find(
+      n => n.type === 'weak_password_warning'
+    );
+    return weakPasswordNotif?.passwordStrength ?? 0;
   };
 
   if (isLoading || !gameState) {
@@ -120,6 +154,18 @@ export default function Game() {
         onClose={handleCloseGameOver}
         isOpen={showGameOver}
       />
+
+      {gameState && (
+        <WeakPasswordTipModal
+          isOpen={showWeakPasswordModal}
+          onClose={handleWeakPasswordClose}
+          onGoToSettings={() => {
+            // This will be handled by the parent component navigation
+            setShowWeakPasswordModal(false);
+          }}
+          passwordStrength={getWeakPasswordStrength()}
+        />
+      )}
     </div>
   );
 }
